@@ -14,6 +14,7 @@ from ..tasks.business_data import TaskBusinessData, checklist_for_task, extract_
 from ..tasks.models import Task
 from ..tasks.progress import ProgressRepository, TaskStatus, VALID_STATUSES
 from ..u8.purchase_invoice_plan import build_special_purchase_invoice_plan
+from ..u8.pywinauto_backend import PyWinAutoU8Controller
 
 
 MISSING_VALUE = "未提取，请查看原始凭证"
@@ -48,6 +49,8 @@ class MainWindow:
         self.copy_status_var = tk.StringVar(value="点击复制按钮后，可在 U8 中使用 Ctrl+V。")
         self.status_choice = tk.StringVar()
         self.checklist_vars: list[tk.BooleanVar] = []
+        self.u8_controller: PyWinAutoU8Controller | None = None
+        self.automation_status = tk.StringVar(value="尚未连接 U8")
         self._build()
         if tasks:
             self._select_task(0)
@@ -183,9 +186,11 @@ class MainWindow:
 
         automation_box = ttk.LabelFrame(self.right, text="U8 自动录入辅助", padding=8)
         automation_box.pack(fill=tk.X)
-        ttk.Label(automation_box, text="专用采购发票：准备中", foreground="#1f5f99").grid(row=0, column=0, sticky="w")
-        ttk.Button(automation_box, text="生成本任务自动录入预览", command=self._show_invoice_dry_run).grid(row=1, column=0, sticky="ew", pady=(5, 0))
-        ttk.Label(automation_box, text="预览只列出可靠数据；每一步仍须人工确认。", foreground="#555555", wraplength=325).grid(row=2, column=0, sticky="w", pady=(4, 0))
+        ttk.Label(automation_box, textvariable=self.automation_status, foreground="#1f5f99").grid(row=0, column=0, sticky="w")
+        ttk.Button(automation_box, text="检测 U8", command=self._detect_u8).grid(row=1, column=0, sticky="ew", pady=(5, 0))
+        ttk.Button(automation_box, text="生成本任务自动录入预览", command=self._show_invoice_dry_run).grid(row=2, column=0, sticky="ew", pady=(4, 0))
+        ttk.Button(automation_box, text="逐项确认并填入表头", command=self._fill_confirmed_invoice_fields).grid(row=3, column=0, sticky="ew", pady=(4, 0))
+        ttk.Label(automation_box, text="只填写已确认的表头字段；供应商、明细、保存和审核仍由人工完成。", foreground="#555555", wraplength=325).grid(row=4, column=0, sticky="w", pady=(4, 0))
 
     def _data_row(self, parent: ttk.Frame, label: str, value: str | None, copy_label: str | None, row: int) -> None:
         ttk.Label(parent, text=f"{label}：").grid(row=row, column=0, sticky="nw", pady=2)
@@ -338,3 +343,54 @@ class MainWindow:
         plan = build_special_purchase_invoice_plan(self._data_for_task(task))
         messagebox.showinfo("自动录入预览", "\n".join(plan.preview_lines()))
         self.logger.info("[DRY RUN] purchase invoice plan for task=%s\n%s", task.task_id, "\n".join(plan.preview_lines()))
+
+    def _detect_u8(self) -> bool:
+        try:
+            controller = PyWinAutoU8Controller(backend="win32")
+            if not controller.connect():
+                self.automation_status.set("未找到新道 U8")
+                messagebox.showwarning("未找到 U8", "请先打开新道 U8，并进入专用发票页面后重试。")
+                return False
+            self.u8_controller = controller
+            resolution = controller.inspect_special_purchase_invoice()
+            if not resolution.page_detected:
+                self.automation_status.set("已连接，但不是专用发票页面")
+                messagebox.showinfo("页面不匹配", "已连接 U8。请进入“专用发票”页面后重新检测。")
+                return False
+            if resolution.modal_dialog_open:
+                self.automation_status.set("已连接，供应商选择窗口打开")
+                messagebox.showinfo("请先完成供应商选择", "已识别专用发票页面。请先手工选择供应商并关闭选择窗口，再开始逐项填入。")
+                return False
+            self.automation_status.set("已连接：专用发票页面待复核")
+            return True
+        except Exception as exc:
+            self.logger.exception("U8 detection failed")
+            self.automation_status.set("无法连接 U8")
+            messagebox.showwarning("无法连接 U8", "请确认本程序与 U8 均以相同权限运行，然后重试。")
+            return False
+
+    def _fill_confirmed_invoice_fields(self) -> None:
+        if self.u8_controller is None and not self._detect_u8():
+            return
+        assert self.u8_controller is not None
+        plan = build_special_purchase_invoice_plan(self._data_for_task(self.tasks[self.selected_index]))
+        if not plan.supported:
+            messagebox.showinfo("不适用", "当前任务不是采购业务，未生成专用发票录入步骤。")
+            return
+        if not messagebox.askyesno("确认页面", "请确认当前是“新增”的专用发票，且尚未保存。\n\n程序不会保存、审核或填写明细。是否继续？"):
+            return
+        filled: list[str] = []
+        for step in plan.steps:
+            if not step.ready or step.field not in {"invoice_date", "supplier_invoice_number", "tax_rate", "currency"}:
+                continue
+            if not messagebox.askyesno("确认填写", f"是否填写“{step.label}”？\n\n值：{step.value}"):
+                continue
+            try:
+                self.u8_controller.fill_confirmed_special_invoice_field(step.field, step.value or "")
+                filled.append(step.label)
+                self.logger.info("Confirmed special invoice field filled: %s", step.field)
+            except RuntimeError as exc:
+                self.logger.warning("Stopped special invoice entry: %s", exc)
+                messagebox.showwarning("已停止", f"未继续填写后续字段。\n\n原因：{exc}")
+                return
+        messagebox.showinfo("表头填写完成", "已填写：" + "、".join(filled or ["无可靠字段"]) + "\n\n请手工选择供应商、填写明细并核对后再保存。")

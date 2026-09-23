@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 from src.tasks.business_data import TaskBusinessData
+from src.u8.pywinauto_backend import WRITABLE_SPECIAL_INVOICE_FIELDS
 from src.u8.purchase_invoice_plan import build_special_purchase_invoice_plan
 
 
@@ -21,6 +22,9 @@ class PurchaseInvoicePlanTests(unittest.TestCase):
         plan = build_special_purchase_invoice_plan(TaskBusinessData(task_id="1", business_category="销售"))
         self.assertFalse(plan.supported)
         self.assertEqual(plan.steps, ())
+
+    def test_live_write_allowlist_excludes_supplier_and_protected_actions(self) -> None:
+        self.assertEqual(WRITABLE_SPECIAL_INVOICE_FIELDS, {"invoice_date", "supplier_invoice_number", "tax_rate", "currency"})
 
 
 if __name__ == "__main__":
