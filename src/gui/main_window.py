@@ -15,6 +15,7 @@ from ..tasks.models import Task
 from ..tasks.progress import ProgressRepository, TaskStatus, VALID_STATUSES
 from ..u8.purchase_invoice_plan import build_special_purchase_invoice_plan
 from ..u8.pywinauto_backend import PyWinAutoU8Controller
+from ..u8.supplier_lookup_profile import SupplierLookupState
 
 
 MISSING_VALUE = "未提取，请查看原始凭证"
@@ -189,8 +190,9 @@ class MainWindow:
         ttk.Label(automation_box, textvariable=self.automation_status, foreground="#1f5f99").grid(row=0, column=0, sticky="w")
         ttk.Button(automation_box, text="检测 U8", command=self._detect_u8).grid(row=1, column=0, sticky="ew", pady=(5, 0))
         ttk.Button(automation_box, text="生成本任务自动录入预览", command=self._show_invoice_dry_run).grid(row=2, column=0, sticky="ew", pady=(4, 0))
-        ttk.Button(automation_box, text="逐项确认并填入表头", command=self._fill_confirmed_invoice_fields).grid(row=3, column=0, sticky="ew", pady=(4, 0))
-        ttk.Label(automation_box, text="只填写已确认的表头字段；供应商、明细、保存和审核仍由人工完成。", foreground="#555555", wraplength=325).grid(row=4, column=0, sticky="w", pady=(4, 0))
+        ttk.Button(automation_box, text="供应商参照：按本任务名称筛选", command=self._filter_current_supplier_lookup).grid(row=3, column=0, sticky="ew", pady=(4, 0))
+        ttk.Button(automation_box, text="逐项确认并填入表头", command=self._fill_confirmed_invoice_fields).grid(row=4, column=0, sticky="ew", pady=(4, 0))
+        ttk.Label(automation_box, text="供应商按钮只会筛选；不会选中记录、点击确定、保存或审核。明细仍由人工完成。", foreground="#555555", wraplength=325).grid(row=5, column=0, sticky="w", pady=(4, 0))
 
     def _data_row(self, parent: ttk.Frame, label: str, value: str | None, copy_label: str | None, row: int) -> None:
         ttk.Label(parent, text=f"{label}：").grid(row=row, column=0, sticky="nw", pady=2)
@@ -343,6 +345,52 @@ class MainWindow:
         plan = build_special_purchase_invoice_plan(self._data_for_task(task))
         messagebox.showinfo("自动录入预览", "\n".join(plan.preview_lines()))
         self.logger.info("[DRY RUN] purchase invoice plan for task=%s\n%s", task.task_id, "\n".join(plan.preview_lines()))
+
+    def _filter_current_supplier_lookup(self) -> None:
+        """Filter an already-open supplier lookup; selection always remains human-controlled."""
+        data = self._data_for_task(self.tasks[self.selected_index])
+        if data.business_category != "采购":
+            messagebox.showinfo("不适用", "当前任务不是采购业务，未执行供应商筛选。")
+            return
+        if not data.counterparty:
+            messagebox.showinfo("缺少供应商", "PDF 未可靠提取供应商名称。请查看原始凭证后手工选择。")
+            return
+        try:
+            controller = self.u8_controller
+            if controller is None:
+                controller = PyWinAutoU8Controller(backend="win32")
+                if not controller.connect():
+                    self.automation_status.set("未找到新道 U8")
+                    messagebox.showwarning("未找到 U8", "请先打开新道 U8，并手工打开供应商选择窗口后重试。")
+                    return
+                self.u8_controller = controller
+            resolution = controller.inspect_supplier_lookup()
+            if resolution.state is SupplierLookupState.NOT_OPEN:
+                self.automation_status.set("请先打开供应商参照窗口")
+                messagebox.showinfo("请先打开供应商参照", "请在 U8 的“供应商”字段手工打开供应商参照窗口，再点击本按钮。")
+                return
+            if resolution.state is not SupplierLookupState.READY_TO_FILTER:
+                self.automation_status.set("供应商参照窗口无法可靠识别")
+                messagebox.showwarning("已停止", "供应商参照窗口的检索控件不唯一或不完整，未执行任何操作。")
+                return
+            if not messagebox.askyesno(
+                "确认筛选供应商",
+                f"将在供应商参照窗口中输入并筛选：\n\n{data.counterparty}\n\n"
+                "程序不会选择记录、点击“确定”、保存或审核。是否继续？",
+            ):
+                return
+            controller.filter_supplier_lookup(data.counterparty)
+            self.automation_status.set("已按供应商筛选：请人工确认并选择记录")
+            self.logger.info("Supplier lookup filtered for task=%s", self.tasks[self.selected_index].task_id)
+            messagebox.showinfo(
+                "筛选完成",
+                "已完成供应商筛选。请核对列表中的供应商名称，手工选中正确记录，再使用 U8 的“确定”。\n\n"
+                "U8Assistant 未选择记录，也未保存单据。",
+            )
+        except Exception as exc:
+            self.logger.exception("Supplier lookup filter stopped")
+            self.automation_status.set("供应商筛选已停止")
+            messagebox.showwarning("已停止", "无法可靠完成供应商筛选；U8 未继续执行后续操作。请手工处理。")
 
     def _detect_u8(self) -> bool:
         try:

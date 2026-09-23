@@ -9,6 +9,8 @@ from typing import Any
 from .base import ControlTarget, U8Controller
 from .purchase_invoice_profile import (InvoicePageState, PROTECTED_FIELDS,
                                        PageResolution, resolve_special_purchase_invoice)
+from .supplier_lookup_profile import (SupplierLookupResolution, SupplierLookupState,
+                                      resolve_supplier_lookup)
 
 
 WRITABLE_SPECIAL_INVOICE_FIELDS = frozenset({"invoice_date", "supplier_invoice_number", "tax_rate", "currency"})
@@ -24,6 +26,7 @@ class PyWinAutoU8Controller(U8Controller):
         self._app = None
         self._window = None
         self._invoice_controls_by_handle: dict[int, Any] = {}
+        self._supplier_lookup_controls_by_handle: dict[int, Any] = {}
 
     def _require_windows(self) -> None:
         if platform.system() != "Windows":
@@ -60,6 +63,7 @@ class PyWinAutoU8Controller(U8Controller):
     def disconnect(self) -> None:
         self._window = None
         self._invoice_controls_by_handle.clear()
+        self._supplier_lookup_controls_by_handle.clear()
 
     def find_window(self) -> object | None:
         return self._window
@@ -109,23 +113,28 @@ class PyWinAutoU8Controller(U8Controller):
         records: list[dict[str, Any]] = []
         self._invoice_controls_by_handle.clear()
         for control in self._safe([], lambda: self._window.descendants()):
-            handle = self._safe(None, lambda control=control: control.handle)
-            rectangle = self._safe(None, lambda control=control: control.rectangle())
-            record = {
-                "title": self._safe("", lambda control=control: control.window_text()),
-                "class_name": self._safe(None, lambda control=control: control.class_name()),
-                "handle": handle,
-                "visible": self._safe(False, lambda control=control: control.is_visible()),
-                "enabled": self._safe(False, lambda control=control: control.is_enabled()),
-                "rectangle": None if rectangle is None else {
-                    "left": self._safe(None, lambda: rectangle.left), "top": self._safe(None, lambda: rectangle.top),
-                    "right": self._safe(None, lambda: rectangle.right), "bottom": self._safe(None, lambda: rectangle.bottom),
-                },
-            }
+            record = self._control_record(control)
+            handle = record["handle"]
             records.append(record)
             if isinstance(handle, int):
                 self._invoice_controls_by_handle[handle] = control
         return records
+
+    def _control_record(self, control: Any) -> dict[str, Any]:
+        """Read one live control without retaining it in a diagnostic artifact."""
+        handle = self._safe(None, lambda: control.handle)
+        rectangle = self._safe(None, lambda: control.rectangle())
+        return {
+            "title": self._safe("", lambda: control.window_text()),
+            "class_name": self._safe(None, lambda: control.class_name()),
+            "handle": handle,
+            "visible": self._safe(False, lambda: control.is_visible()),
+            "enabled": self._safe(False, lambda: control.is_enabled()),
+            "rectangle": None if rectangle is None else {
+                "left": self._safe(None, lambda: rectangle.left), "top": self._safe(None, lambda: rectangle.top),
+                "right": self._safe(None, lambda: rectangle.right), "bottom": self._safe(None, lambda: rectangle.bottom),
+            },
+        }
 
     def inspect_special_purchase_invoice(self) -> PageResolution:
         """Validate the current page before proposing any live edit."""
@@ -150,3 +159,64 @@ class PyWinAutoU8Controller(U8Controller):
             control.set_edit_text(value)
         except Exception as exc:
             raise RuntimeError(f"无法填写字段 {resolved.label}，未继续执行后续步骤。") from exc
+
+    def _supplier_lookup_snapshot(self) -> SupplierLookupResolution:
+        """Find exactly one verified supplier-reference popup in the live session."""
+        if self._window is None:
+            raise RuntimeError("尚未连接 U8 窗口。")
+        try:
+            from pywinauto import Desktop
+        except ImportError as exc:  # pragma: no cover - platform-specific
+            raise RuntimeError("缺少 pywinauto。") from exc
+        matches: list[tuple[SupplierLookupResolution, dict[int, Any]]] = []
+        for window in self._safe([], lambda: Desktop(backend=self.backend).windows()):
+            root = self._control_record(window)
+            descendants = self._safe([], lambda window=window: window.descendants())
+            controls = [self._control_record(control) for control in descendants]
+            resolution = resolve_supplier_lookup(root, controls)
+            # An unrelated empty VB6 form is never sufficient evidence.  The
+            # observed lookup needs its supplier field, match mode and result grid.
+            required = {"supplier_column", "match_mode", "result_grid"}
+            if not required.issubset(resolution.controls):
+                continue
+            controls_by_handle: dict[int, Any] = {}
+            for control in descendants:
+                handle = self._safe(None, lambda control=control: control.handle)
+                if isinstance(handle, int):
+                    controls_by_handle[handle] = control
+            matches.append((resolution, controls_by_handle))
+        self._supplier_lookup_controls_by_handle.clear()
+        if not matches:
+            return SupplierLookupResolution(SupplierLookupState.NOT_OPEN, None, {}, ())
+        if len(matches) > 1:
+            return SupplierLookupResolution(SupplierLookupState.AMBIGUOUS, None, {}, ("lookup_window",))
+        resolution, controls_by_handle = matches[0]
+        self._supplier_lookup_controls_by_handle.update(controls_by_handle)
+        return resolution
+
+    def inspect_supplier_lookup(self) -> SupplierLookupResolution:
+        """Read the current supplier popup only; this method never clicks U8."""
+        return self._supplier_lookup_snapshot()
+
+    def filter_supplier_lookup(self, supplier: str) -> None:
+        """Fill the verified lookup filter and run its query, but never select a row."""
+        if not supplier.strip():
+            raise RuntimeError("供应商名称为空，未执行筛选。")
+        resolution = self._supplier_lookup_snapshot()
+        if resolution.state is SupplierLookupState.NOT_OPEN:
+            raise RuntimeError("未检测到供应商参照窗口。请先在 U8 中手工打开供应商选择窗口。")
+        if resolution.state is not SupplierLookupState.READY_TO_FILTER:
+            raise RuntimeError("供应商参照窗口控件不唯一或不完整，已停止筛选。")
+        query = resolution.controls.get("query_input")
+        filter_button = resolution.controls.get("filter")
+        if query is None or filter_button is None or query.observed_handle is None or filter_button.observed_handle is None:
+            raise RuntimeError("未能唯一定位供应商检索框或过滤按钮。")
+        query_control = self._supplier_lookup_controls_by_handle.get(query.observed_handle)
+        button_control = self._supplier_lookup_controls_by_handle.get(filter_button.observed_handle)
+        if query_control is None or button_control is None:
+            raise RuntimeError("供应商参照窗口已变化，已取消操作。")
+        try:
+            query_control.set_edit_text(supplier)
+            button_control.click_input()
+        except Exception as exc:
+            raise RuntimeError("供应商筛选未完成，未继续选择记录。") from exc
