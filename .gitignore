@@ -17,3 +17,4 @@ outputs/
 config/config.json
 data/progress.json
 assets/*.pdf
+assets/rendered_pages/

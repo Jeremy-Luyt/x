@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any, Callable, Iterable, Literal
 
 
-U8_WORDS = ("u8", "用友", "企业应用平台")
+U8_WORDS = ("u8", "用友", "企业应用平台", "新道")
 INTERACTIVE_TYPES = {
     "Edit", "Button", "ComboBox", "CheckBox", "RadioButton", "TreeView", "List",
     "ListItem", "DataGrid", "DataItem", "MenuItem", "TabItem",
@@ -99,10 +99,15 @@ def _safe_call(default: Any, errors: ErrorRecorder, context: str, callback: Any)
 
 
 def _rectangle(window: Any, errors: ErrorRecorder, context: str) -> dict[str, int] | None:
-    rectangle = _safe_call(None, errors, f"{context}.rectangle", window.rectangle)
+    rectangle = _safe_call(None, errors, f"{context}.rectangle", lambda: window.rectangle())
     if rectangle is None:
         return None
-    return {"left": rectangle.left, "top": rectangle.top, "right": rectangle.right, "bottom": rectangle.bottom}
+    return {
+        "left": _safe_call(None, errors, f"{context}.rectangle.left", lambda: rectangle.left),
+        "top": _safe_call(None, errors, f"{context}.rectangle.top", lambda: rectangle.top),
+        "right": _safe_call(None, errors, f"{context}.rectangle.right", lambda: rectangle.right),
+        "bottom": _safe_call(None, errors, f"{context}.rectangle.bottom", lambda: rectangle.bottom),
+    }
 
 
 def _normalise_control_type(raw_type: Any, class_name: Any) -> str | None:
@@ -112,17 +117,33 @@ def _normalise_control_type(raw_type: Any, class_name: Any) -> str | None:
 
 
 def _window_record(window: Any, errors: ErrorRecorder, context: str) -> dict[str, Any]:
-    element = getattr(window, "element_info", None)
-    class_name = _safe_call(getattr(element, "class_name", None), errors, f"{context}.class_name", window.class_name)
+    """Read every remote-window field independently; no property access is trusted."""
+    element = _safe_call(None, errors, f"{context}.element_info", lambda: getattr(window, "element_info", None))
+    title = _safe_call("", errors, f"{context}.title", lambda: window.window_text())
+    handle = _safe_call(None, errors, f"{context}.handle", lambda: window.handle)
+    class_name = _safe_call(None, errors, f"{context}.class_name", lambda: window.class_name())
+    if not class_name and element is not None:
+        class_name = _safe_call(None, errors, f"{context}.element_class_name", lambda: getattr(element, "class_name"))
+    control_type = _safe_call(None, errors, f"{context}.control_type", lambda: getattr(element, "control_type")) if element is not None else None
+    automation_id = _safe_call(None, errors, f"{context}.automation_id", lambda: getattr(element, "automation_id")) if element is not None else None
     return {
-        "title": _safe_call("", errors, f"{context}.title", window.window_text),
-        "handle": _safe_call(None, errors, f"{context}.handle", lambda: window.handle),
+        "title": title,
+        "handle": handle,
         "class_name": class_name,
-        "control_type": _normalise_control_type(getattr(element, "control_type", None), class_name),
-        "automation_id": getattr(element, "automation_id", None),
+        "control_type": _normalise_control_type(control_type, class_name),
+        "automation_id": automation_id,
         "rectangle": _rectangle(window, errors, context),
-        "visible": _safe_call(None, errors, f"{context}.visible", window.is_visible),
-        "enabled": _safe_call(None, errors, f"{context}.enabled", window.is_enabled),
+        "visible": _safe_call(None, errors, f"{context}.visible", lambda: window.is_visible()),
+        "enabled": _safe_call(None, errors, f"{context}.enabled", lambda: window.is_enabled()),
+    }
+
+
+def _candidate_record(window: Any, errors: ErrorRecorder, context: str) -> dict[str, Any]:
+    """Use only low-risk metadata while deciding whether a top-level window is U8."""
+    return {
+        "title": _safe_call("", errors, f"{context}.title", lambda: window.window_text()),
+        "handle": _safe_call(None, errors, f"{context}.handle", lambda: window.handle),
+        "class_name": _safe_call(None, errors, f"{context}.class_name", lambda: window.class_name()),
     }
 
 
@@ -142,13 +163,13 @@ def _node_key(record: dict[str, Any]) -> str:
 
 
 def _parent_and_depth(control: Any, root_key: str, errors: ErrorRecorder, context: str) -> tuple[dict[str, Any] | None, int]:
-    parent = _safe_call(None, errors, f"{context}.parent", control.parent)
+    parent = _safe_call(None, errors, f"{context}.parent", lambda: control.parent())
     if parent is None:
         return None, 0
     direct_parent = _window_record(parent, errors, f"{context}.parent_record")
     depth, cursor, seen = 1, parent, {_node_key(direct_parent)}
     while depth < 30 and _node_key(direct_parent) != root_key:
-        next_parent = _safe_call(None, errors, f"{context}.ancestor_{depth}", cursor.parent)
+        next_parent = _safe_call(None, errors, f"{context}.ancestor_{depth}", lambda: cursor.parent())
         if next_parent is None:
             break
         cursor = next_parent
@@ -250,7 +271,14 @@ def list_top_windows(errors: ErrorRecorder) -> tuple[list[dict[str, Any]], str |
     except Exception as exc:
         errors.record("top_level_windows", exc)
         return [], f"无法列举顶层窗口：{type(exc).__name__}: {exc}"
-    return ([_window_record(window, errors, f"top_window_{index}") for index, window in enumerate(windows, 1)], None)
+    records: list[dict[str, Any]] = []
+    for index, window in enumerate(windows, 1):
+        try:
+            records.append(_window_record(window, errors, f"top_window_{index}"))
+        except Exception as exc:
+            # Handles can disappear between Desktop.windows() and inspection.
+            errors.record(f"top_window_{index}.skip", exc)
+    return records, None
 
 
 def _inspect_window(backend: str, window: Any, index: int, errors: ErrorRecorder) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]], list[Any], str]:
@@ -265,7 +293,7 @@ def _inspect_window(backend: str, window: Any, index: int, errors: ErrorRecorder
     except Exception as exc:
         errors.record(f"{backend}.window_{index}.print_control_identifiers", exc)
         identifiers.write(f"print_control_identifiers failed: {type(exc).__name__}: {exc}\n")
-    descendants = _safe_call([], errors, f"{backend}.window_{index}.descendants", window.descendants)
+    descendants = _safe_call([], errors, f"{backend}.window_{index}.descendants", lambda: window.descendants())
     for control_index, control in enumerate(descendants, 1):
         context = f"{backend}.window_{index}.control_{control_index}"
         try:
@@ -291,8 +319,11 @@ def inspect_backend(backend: str, errors: ErrorRecorder) -> BackendResult:
     result = BackendResult(backend, "success", "")
     matches = []
     for index, window in enumerate(windows, 1):
-        if _matches_u8(_window_record(window, errors, f"{backend}.candidate_{index}")):
-            matches.append(window)
+        try:
+            if _matches_u8(_candidate_record(window, errors, f"{backend}.candidate_{index}")):
+                matches.append(window)
+        except Exception as exc:
+            errors.record(f"{backend}.candidate_{index}.skip", exc)
     if not matches:
         result.identifiers = "未找到标题含 U8、用友或企业应用平台的窗口。\n"
         return result
@@ -402,6 +433,20 @@ def _notify(progress: ProgressCallback | None, message: str) -> None:
             pass
 
 
+def _write_json(path: Path, value: Any, errors: ErrorRecorder, context: str) -> None:
+    try:
+        path.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception as exc:
+        errors.record(context, exc)
+
+
+def _write_text(path: Path, value: str, errors: ErrorRecorder, context: str) -> None:
+    try:
+        path.write_text(value, encoding="utf-8")
+    except Exception as exc:
+        errors.record(context, exc)
+
+
 def run_probe(output_base: Path | None = None, label: str | None = None,
               backend: Literal["win32", "uia", "both"] = "both", take_screenshots: bool = True,
               progress: ProgressCallback | None = None) -> Path:
@@ -412,37 +457,40 @@ def run_probe(output_base: Path | None = None, label: str | None = None,
     output_dir = _create_output_dir(output_base or _project_root() / "diagnostics", directory_name)
     errors = ErrorRecorder(output_dir / "diagnostics_errors.log")
     _notify(progress, "正在检查电脑环境……")
-    environment = environment_snapshot(errors)
-    (output_dir / "environment.json").write_text(json.dumps(environment, ensure_ascii=False, indent=2), encoding="utf-8")
+    environment = _safe_call({}, errors, "environment_snapshot", lambda: environment_snapshot(errors))
+    _write_json(output_dir / "environment.json", environment, errors, "write.environment")
     _notify(progress, "正在寻找 U8 企业应用平台……")
     windows, top_error = list_top_windows(errors)
     suspected_count = sum(_matches_u8(record) for record in windows)
-    (output_dir / "windows.json").write_text(json.dumps({"window_count": len(windows), "suspected_u8_window_count": suspected_count, "windows": windows, "error": top_error}, ensure_ascii=False, indent=2), encoding="utf-8")
+    _write_json(output_dir / "windows.json", {"window_count": len(windows), "suspected_u8_window_count": suspected_count, "windows": windows, "error": top_error}, errors, "write.windows")
     if suspected_count:
         _notify(progress, "已找到 U8。")
     _notify(progress, "正在分析当前 U8 页面……")
     selected = ("win32", "uia") if backend == "both" else (backend,)
     results: list[BackendResult] = []
     for name in ("win32", "uia"):
-        result = inspect_backend(name, errors) if name in selected else BackendResult(name, "skipped", f"{name} backend skipped by --backend {backend}.\n")
+        if name in selected:
+            result = _safe_call(BackendResult(name, "failed", f"{name} backend failed but probe continued.\n"), errors, f"{name}.inspection", lambda: inspect_backend(name, errors))
+        else:
+            result = BackendResult(name, "skipped", f"{name} backend skipped by --backend {backend}.\n")
         results.append(result)
-        (output_dir / f"u8_{name}.txt").write_text(result.identifiers, encoding="utf-8")
-        (output_dir / f"u8_{name}.json").write_text(json.dumps(result.windows, ensure_ascii=False, indent=2), encoding="utf-8")
-    (output_dir / "interactive_controls.json").write_text(json.dumps([record for result in results for record in result.interactive_controls], ensure_ascii=False, indent=2), encoding="utf-8")
-    (output_dir / "window_hierarchy.json").write_text(json.dumps([entry for result in results for entry in result.hierarchy], ensure_ascii=False, indent=2), encoding="utf-8")
-    _capture_screenshots(output_dir, results, errors, take_screenshots)
+        _write_text(output_dir / f"u8_{name}.txt", result.identifiers, errors, f"write.{name}.txt")
+        _write_json(output_dir / f"u8_{name}.json", result.windows, errors, f"write.{name}.json")
+    _write_json(output_dir / "interactive_controls.json", [record for result in results for record in result.interactive_controls], errors, "write.interactive_controls")
+    _write_json(output_dir / "window_hierarchy.json", [entry for result in results for entry in result.hierarchy], errors, "write.window_hierarchy")
+    _safe_call(None, errors, "capture_screenshots", lambda: _capture_screenshots(output_dir, results, errors, take_screenshots))
     _notify(progress, "正在保存诊断结果……")
-    write_summary(output_dir, environment, windows, results)
+    _safe_call(None, errors, "write_summary", lambda: write_summary(output_dir, environment, windows, results))
     backend_found = any(result.windows for result in results)
     is_non_admin = environment.get("administrator", {}).get("is_administrator") is False
     outcome = {
         "u8_found": bool(suspected_count or backend_found),
         "possible_permission_mismatch": bool(platform.system() == "Windows" and is_non_admin and not (suspected_count or backend_found)),
+        "completed_with_warnings": bool(errors.messages),
     }
-    (output_dir / "probe_outcome.json").write_text(json.dumps(outcome, ensure_ascii=False, indent=2), encoding="utf-8")
+    _write_json(output_dir / "probe_outcome.json", outcome, errors, "write.outcome")
     (output_dir / "diagnostics_errors.log").touch(exist_ok=True)
     _notify(progress, "诊断完成。")
-    print(f"Probe completed: {output_dir}")
     return output_dir
 
 
@@ -452,7 +500,9 @@ def main() -> int:
     parser.add_argument("--backend", choices=("win32", "uia", "both"), default="both", help="默认 both")
     parser.add_argument("--no-screenshot", action="store_true", help="不捕获窗口截图")
     args = parser.parse_args()
-    run_probe(label=args.label, backend=args.backend, take_screenshots=not args.no_screenshot)
+    output_dir = run_probe(label=args.label, backend=args.backend, take_screenshots=not args.no_screenshot)
+    # Do not print here: the packaged diagnostic GUI is deliberately windowed.
+    # The return value remains available to CLI integrations and tests.
     return 0
 
 

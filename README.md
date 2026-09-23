@@ -58,6 +58,8 @@ PDF outline 页码是 **从 1 开始** 的；PyMuPDF 的 `load_page()` 是 **从
 
 工具只读取窗口和控件信息，绝不会点击、输入、保存或修改 U8。成功后会在桌面自动生成 `U8诊断结果_YYYYMMDD_HHMMSS.zip`，界面提供“打开文件位置”。如果没找到 U8，界面会提示先确认 U8 窗口保持打开；若可能是权限不一致，则提示关闭工具后右键“以管理员身份运行”。不会向普通使用者显示 traceback、Python、backend 或 JSON 术语。
 
+Windows 桌面上的无关窗口可能拒绝访问或在枚举中瞬间关闭。probe 会逐字段读取窗口信息；AccessDenied、无效 handle、UIA、截图或个别控件失败都只写入 `diagnostics_errors.log`，不会中止已有报告。找到 U8 后，仍会生成 ZIP，并提示“诊断完成，部分系统窗口无法读取，已记录。”
+
 ### 开发者：构建 Windows 7 x86 EXE（机房发布版本）
 
 本开发机是 macOS，不能直接生成可用的 Windows EXE。Win7 x86 发布版必须在 Windows 上使用 **32 位 Python 3.8.x** 构建。开发机安装 Python 3.8 x86 后执行：
@@ -74,6 +76,12 @@ build_win7_x86.bat
 依赖锁定文件为 `requirements-win7-x86.txt`：Python 3.8 x86 下使用 `PyMuPDF==1.24.11`、`Pillow==10.4.0`、`pywinauto==0.6.9`、`pywin32==306`、`comtypes==1.4.8`、`PyInstaller==5.13.2`。之后把 EXE 交给普通使用者即可；他们的电脑不需要 Python、pip 或命令行。
 
 `U8Assistant-Win7-x86.spec` 和 `U8诊断工具-Win7-x86.spec` 都是 PyInstaller one-file/windowed 构建，不显示控制台黑框；Python runtime 和同一 x86 环境产生的 DLL 会随 EXE 一起打包。`U8诊断工具-Win7-x86.spec` 纳入 pywinauto、comtypes、Pillow 与 pywin32 所需的 hidden imports。
+
+### Win7 PDF 兼容方式
+
+Win7 x86 发布版**不会在运行时导入 PyMuPDF**。CI 先把固定的 `assets/业财税2023.pdf` 预渲染为 `assets/rendered_pages/page_001.jpg` … `page_125.jpg`，并写入页数、150 DPI、尺寸及源 PDF SHA-256 的 `manifest.json`。Win7 spec 只打包这些 JPEG、manifest、`tasks.json` 和 Pillow；缩放也由 Pillow 完成。
+
+因此，即使 Win7 出现 PyMuPDF native DLL 加载失败，任务页面仍可显示。静态页缺失时界面只显示页面不可用提示，不会误报“缺少 PyMuPDF”。Win10/11 x64 版本仍使用原始 PDF/PyMuPDF 的惰性渲染方式。
 
 `build_windows.bat` 仍保留给 Windows 10/11 x64 开发版本，输出名称明确为 `U8Assistant-Win10-x64.exe` 与 `U8诊断工具-Win10-x64.exe`，不要带到学校 Win7 x86 机房。
 

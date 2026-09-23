@@ -87,14 +87,15 @@ def main() -> int:
         else:
             tasks = load_tasks(writable_root / "data" / "tasks.json")
         warning_count = sum(len(task.warnings) for task in tasks)
-        print(f"已加载 {len(tasks)} 个任务（{warning_count} 条解析警告）。")
+        logger.info("Loaded %s tasks with %s parsing warnings.", len(tasks), warning_count)
         if args.no_gui:
             startup_logger.info("stage: command-line validation complete")
             return 0
         startup_logger.info("stage: initializing Tkinter GUI")
         import tkinter as tk
         root = tk.Tk()
-        MainWindow(root, tasks, pdf_path, writable_root, logger)
+        static_pages_dir = RESOURCE_ROOT / "assets" / "rendered_pages"
+        MainWindow(root, tasks, pdf_path, writable_root, logger, static_pages_dir)
         startup_logger.info("stage: GUI ready")
         root.mainloop()
         return 0
@@ -106,7 +107,6 @@ def main() -> int:
         except Exception:
             # A console is intentionally absent in the packaged program.
             pass
-        print(f"启动失败：{exc}", file=sys.stderr)
         return 1
 
 

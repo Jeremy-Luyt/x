@@ -22,13 +22,14 @@ STATUS_ICONS = {"未开始": "○", "进行中": "◐", "已完成": "✓", "需
 class MainWindow:
     """A desktop reader that reduces manual entry without automating U8."""
 
-    def __init__(self, root: tk.Tk, tasks: list[Task], pdf_path: Path | None, project_root: Path, logger: logging.Logger) -> None:
+    def __init__(self, root: tk.Tk, tasks: list[Task], pdf_path: Path | None, project_root: Path,
+                 logger: logging.Logger, static_pages_dir: Path | None = None) -> None:
         self.root = root
         self.tasks = tasks
         self.pdf_path = pdf_path
         self.project_root = project_root
         self.logger = logger
-        self.renderer = PdfPageRenderer(pdf_path, project_root / "screenshots" / "pdf_cache") if pdf_path else None
+        self.renderer = PdfPageRenderer(pdf_path, project_root / "screenshots" / "pdf_cache", static_pages_dir) if (pdf_path or static_pages_dir) else None
         self.progress = ProgressRepository(project_root / "data" / "progress.json")
         self.progress.load()
         self.data_cache: dict[str, TaskBusinessData] = {}
@@ -258,8 +259,8 @@ class MainWindow:
         task = self.tasks[self.selected_index]
         if self.renderer is None:
             self.canvas.delete("all")
-            self.canvas.create_text(300, 200, text="未找到原始 PDF。\n请使用包含实验 PDF 的完整 U8Assistant 包。", fill="white", font=("Microsoft YaHei UI", 14), anchor=tk.CENTER)
-            self.page_var.set("原始 PDF 不可用")
+            self.canvas.create_text(300, 200, text="未找到原始 PDF 页面。\n请使用完整的 U8Assistant 包。", fill="white", font=("Microsoft YaHei UI", 14), anchor=tk.CENTER)
+            self.page_var.set("PDF 页面不可用")
             return
         if not task.source_pages:
             self.canvas.delete("all")
@@ -278,7 +279,7 @@ class MainWindow:
         except Exception as exc:
             self.logger.exception("PDF rendering failed")
             self.canvas.delete("all")
-            self.canvas.create_text(300, 200, text="页面渲染失败。请确认原始 PDF 文件仍在原位置。", fill="white", anchor=tk.CENTER)
+            self.canvas.create_text(300, 200, text="页面无法显示。请使用完整的 U8Assistant 包，或联系技术人员。", fill="white", anchor=tk.CENTER)
 
     def _previous_page(self) -> None:
         if self.page_index > 0:

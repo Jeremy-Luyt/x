@@ -3,11 +3,81 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+from types import ModuleType
+from unittest.mock import patch
 
-from src.u8.probe import BackendResult, _control_stats, _create_output_dir, _safe_label, write_summary
+from src.u8.diagnostic_bundle import create_diagnostic_zip
+from src.u8.probe import (BackendResult, ErrorRecorder, _control_stats, _create_output_dir,
+                          _safe_label, _window_record, list_top_windows, run_probe,
+                          write_summary)
+
+
+class FakeWindow:
+    def __init__(self, title: str = "U8 企业应用平台", broken_handle: bool = False) -> None:
+        self.title = title
+        self.broken_handle = broken_handle
+
+    def window_text(self) -> str:
+        return self.title
+
+    @property
+    def handle(self) -> int:
+        if self.broken_handle:
+            raise OSError(1400, "无效的窗口句柄")
+        return 123
+
+    def class_name(self) -> str:
+        return "MainWindow"
+
+    def rectangle(self) -> object:
+        return type("Rect", (), {"left": 0, "top": 0, "right": 100, "bottom": 100})()
+
+    def is_visible(self) -> bool:
+        return True
+
+    def is_enabled(self) -> bool:
+        return True
+
+
+class DeniedElement:
+    @property
+    def control_type(self) -> str:
+        raise PermissionError(5, "拒绝访问")
+
+    @property
+    def automation_id(self) -> str:
+        raise PermissionError(5, "拒绝访问")
+
+
+class WindowWithDeniedElement(FakeWindow):
+    @property
+    def element_info(self) -> DeniedElement:
+        return DeniedElement()
 
 
 class ProbeReportTests(unittest.TestCase):
+    def test_denied_element_properties_are_recorded_without_aborting(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            errors = ErrorRecorder(Path(temporary) / "diagnostics_errors.log")
+            record = _window_record(WindowWithDeniedElement(), errors, "fake")
+        self.assertEqual(record["title"], "U8 企业应用平台")
+        self.assertIsNone(record["control_type"])
+        self.assertIsNone(record["automation_id"])
+        self.assertTrue(any("control_type" in message for message in errors.messages))
+        self.assertTrue(any("automation_id" in message for message in errors.messages))
+
+    def test_invalid_handles_in_top_window_enumeration_do_not_stop_remaining_windows(self) -> None:
+        windows = [FakeWindow(title=f"窗口 {index}", broken_handle=index in {3, 8, 15}) for index in range(20)]
+        module = ModuleType("pywinauto")
+        module.Desktop = lambda backend: type("Desktop", (), {"windows": lambda self: windows})()
+        with tempfile.TemporaryDirectory() as temporary, patch.dict("sys.modules", {"pywinauto": module}):
+            errors = ErrorRecorder(Path(temporary) / "diagnostics_errors.log")
+            records, error = list_top_windows(errors)
+        self.assertIsNone(error)
+        self.assertEqual(len(records), 20)
+        self.assertEqual(records[4]["handle"], 123)
+        self.assertTrue(any("handle" in message for message in errors.messages))
+
     def test_label_is_safe_for_a_diagnostics_directory(self) -> None:
         self.assertEqual(_safe_label("purchase/order popup"), "purchase_order_popup")
         self.assertEqual(_safe_label("../../"), "probe")
@@ -51,6 +121,26 @@ class ProbeReportTests(unittest.TestCase):
         self.assertIn("## win32 backend", content)
         self.assertIn("`Edit`: 1", content)
         self.assertIn("Non-empty: **1**", content)
+
+    def test_backend_and_screenshot_failures_still_leave_report_and_zip(self) -> None:
+        win32 = BackendResult("win32", "success", "ok", windows=[{"window": {"title": "U8"}, "controls": []}])
+
+        def inspect(name: str, errors: ErrorRecorder) -> BackendResult:
+            if name == "uia":
+                raise RuntimeError("UIA unavailable")
+            return win32
+
+        with tempfile.TemporaryDirectory() as temporary, patch("src.u8.probe.environment_snapshot", return_value={"administrator": {"is_administrator": False}}), patch("src.u8.probe.list_top_windows", return_value=([{"title": "U8"}], None)), patch("src.u8.probe.inspect_backend", side_effect=inspect), patch("src.u8.probe._capture_screenshots", side_effect=RuntimeError("screenshot unavailable")):
+            root = Path(temporary)
+            report = run_probe(root)
+            archive = create_diagnostic_zip(report, root / "desktop")
+            outcome = (report / "probe_outcome.json").read_text(encoding="utf-8")
+            self.assertTrue((report / "environment.json").is_file())
+            self.assertTrue((report / "u8_win32.txt").is_file())
+            self.assertTrue((report / "u8_uia.txt").is_file())
+            self.assertTrue((report / "diagnostics_errors.log").is_file())
+            self.assertTrue(archive.is_file())
+            self.assertIn('"u8_found": true', outcome)
 
 
 if __name__ == "__main__":

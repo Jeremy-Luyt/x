@@ -1,31 +1,33 @@
 # Build only with 32-bit Python 3.8 on Windows.  PyInstaller cannot cross-compile.
 from pathlib import Path
 
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import collect_data_files
 
 
 hiddenimports = [
-    "fitz",
     "PIL.Image",
     "PIL.ImageTk",
 ]
-hiddenimports += collect_submodules("fitz")
 
 datas = [("data/tasks.json", "data")]
-pdf_asset = Path("assets") / "业财税2023.pdf"
-if pdf_asset.is_file():
-    datas.append((str(pdf_asset), "assets"))
+rendered_pages = Path("assets") / "rendered_pages"
+if not (rendered_pages / "manifest.json").is_file():
+    raise SystemExit("Win7 x86 build requires assets/rendered_pages/manifest.json. Run tools/render_pdf_pages.py first.")
+for source in rendered_pages.rglob("*"):
+    if source.is_file():
+        datas.append((str(source), str(source.parent)))
 
 a = Analysis(
     ["main.py"],
     pathex=[],
     binaries=[],
-    datas=datas + collect_data_files("fitz"),
+    datas=datas,
     hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    # Win7 runtime never imports PyMuPDF: pages were rendered during CI build.
+    excludes=["fitz", "pymupdf", "_fitz", "_extra"],
     noarchive=False,
 )
 pyz = PYZ(a.pure)

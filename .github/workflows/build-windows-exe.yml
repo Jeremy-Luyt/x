@@ -41,6 +41,13 @@ jobs:
         shell: pwsh
         run: python -m unittest discover -s tests -v
 
+      - name: Pre-render fixed teaching PDF for Win7 runtime
+        shell: pwsh
+        run: |
+          python tools/render_pdf_pages.py --pdf "assets/业财税2023.pdf" --output "assets/rendered_pages" --dpi 150 --quality 84
+          Get-ChildItem "assets/rendered_pages" -Filter "page_*.jpg" | Measure-Object | Select-Object Count
+          Get-Item "assets/rendered_pages/manifest.json"
+
       - name: Package U8Assistant Win7 x86
         shell: pwsh
         run: python -m PyInstaller --noconfirm --clean "U8Assistant-Win7-x86.spec"

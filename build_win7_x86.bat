@@ -25,6 +25,10 @@ echo Running tests with Python 3.8 x86...
 py -3.8-32 -m unittest discover -s tests -v
 if errorlevel 1 exit /b 1
 
+echo Pre-rendering fixed teaching PDF for Win7 runtime...
+py -3.8-32 tools\render_pdf_pages.py --pdf "assets\业财税2023.pdf" --output "assets\rendered_pages" --dpi 150 --quality 84
+if errorlevel 1 exit /b 1
+
 echo Packaging U8Assistant for Windows 7 x86...
 py -3.8-32 -m PyInstaller --noconfirm --clean "U8Assistant-Win7-x86.spec"
 if errorlevel 1 exit /b 1

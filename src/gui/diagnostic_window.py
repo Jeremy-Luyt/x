@@ -35,6 +35,7 @@ class DiagnosticWindow:
         self.logger = logger or logging.getLogger("u8assistant")
         self.events: queue.Queue[tuple[str, Any]] = queue.Queue()
         self.archive_path: Path | None = None
+        self.completed_with_warnings = False
         self.status_var = tk.StringVar(value="状态：尚未开始")
         self.message_var = tk.StringVar(value="")
         self._build_initial_view()
@@ -76,7 +77,8 @@ class DiagnosticWindow:
         frame = self._clear()
         ttk.Label(frame, text="✅ 诊断完成", font=("Microsoft YaHei UI", 21, "bold")).grid(row=0, column=0, pady=(28, 22))
         filename = self.archive_path.name if self.archive_path else "诊断结果.zip"
-        ttk.Label(frame, text=f"诊断文件已保存到桌面：\n{filename}", justify=tk.CENTER, font=("Microsoft YaHei UI", 12), wraplength=430).grid(row=1, column=0, pady=10)
+        suffix = "\n\n部分系统窗口无法读取，已记录。" if self.completed_with_warnings else ""
+        ttk.Label(frame, text=f"诊断文件已保存到桌面：\n{filename}{suffix}", justify=tk.CENTER, font=("Microsoft YaHei UI", 12), wraplength=430).grid(row=1, column=0, pady=10)
         buttons = ttk.Frame(frame)
         buttons.grid(row=2, column=0, pady=(30, 0))
         ttk.Button(buttons, text="打开文件位置", command=self._open_archive_location, width=16).grid(row=0, column=0, padx=5, ipady=5)
@@ -113,9 +115,11 @@ class DiagnosticWindow:
             )
             outcome = json.loads((report_dir / "probe_outcome.json").read_text(encoding="utf-8"))
             result_kind = diagnostic_result_kind(outcome)
+            # A report directory is useful even when U8 is not found. Always make
+            # the best-effort ZIP first; the ordinary UI still gives clear guidance.
+            archive = create_diagnostic_zip(report_dir, desktop_directory())
             if result_kind == "success":
-                archive = create_diagnostic_zip(report_dir, desktop_directory())
-                self.events.put(("success", archive))
+                self.events.put(("success", (archive, bool(outcome.get("completed_with_warnings")))))
             else:
                 self.events.put(("not_found", result_kind == "permission"))
         except Exception as exc:
@@ -129,7 +133,7 @@ class DiagnosticWindow:
                 if kind == "progress":
                     self.status_var.set(value)
                 elif kind == "success":
-                    self.archive_path = value
+                    self.archive_path, self.completed_with_warnings = value
                     self._build_success_view()
                 elif kind == "not_found":
                     self._build_not_found_view(value)
@@ -155,4 +159,5 @@ class DiagnosticWindow:
 
     def _reset(self) -> None:
         self.status_var.set("状态：尚未开始")
+        self.completed_with_warnings = False
         self._build_initial_view()
