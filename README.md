@@ -156,6 +156,20 @@ python -m src.u8.probe --label supplier_popup --backend uia
 
 本项目不访问 U8 数据库或 SQL Server，不保存账号密码，也不自动保存、记账、审核或结账。
 
+### 专用采购发票：当前验证状态
+
+`src/u8/purchase_invoice_workflow.py` 提供供应商规范化比对、单行 `Decimal` 金额/税额/价税合计校验、结构化失败结果和 Grid capability detection。真实诊断已确认明细控件是 `VSFlexGrid8N` 自绘 Grid，尚未采到可定位的单元格、存货参照或供应商参照 selector。因此程序不会尝试猜测或用绝对坐标填写供应商与明细。
+
+要继续该 workflow 的实机验证，请分别采集以下状态的诊断 ZIP：
+
+1. 新增专用采购发票空白页；
+2. 供应商参照弹窗刚打开；
+3. 存货参照弹窗刚打开；
+4. 第一行数量单元格进入编辑状态；
+5. 第一行原币单价单元格进入编辑状态。
+
+这些证据到位后才会启用供应商自动选择和单行 Grid 的键盘/锚点策略；任何 selector 不唯一、回读不一致或意外弹窗都会停止，交由人工处理。
+
 ## 项目结构（诊断相关）
 
 ```text
