@@ -1,0 +1,24 @@
+{
+  "profile_id": "special_purchase_invoice_win32_v1",
+  "source": "Windows 7 x86 新道 U8 专用发票录入页诊断（2026-12-23）",
+  "backend": "win32",
+  "page_signature": {
+    "visible_title_contains": "专用采购发票",
+    "required_visible_classes": ["VSFlexGrid8N"]
+  },
+  "field_anchors": {
+    "business_type": "业务类型",
+    "invoice_type": "发票类型",
+    "invoice_date": "开票日期",
+    "supplier": "供应商",
+    "purchase_type": "采购类型",
+    "tax_rate": "税率",
+    "currency": "币种",
+    "department": "部门名称",
+    "exchange_rate": "汇率",
+    "supplier_invoice_number": "供应商发票号"
+  },
+  "protected_fields": ["system_invoice_number"],
+  "forbidden_actions": ["save", "audit", "post", "close_period"],
+  "notes": "运行时只用页面签名、可见标签和同一行右侧输入控件定位；不使用截图坐标、窗口 handle 或诊断中的业务数据。"
+}
