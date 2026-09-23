@@ -12,6 +12,7 @@
 - 默认 `MockU8Controller` 只写入形如 `[DRY RUN] set_text field=date value=12月7日` 的日志。`save()` 明确拒绝自动保存。
 - `src/u8/probe.py` 在 Windows 机房收集窗口与控件证据，自动产出摘要、候选交互控件和窗口层级；任一 pywinauto backend、控件或截图出错也会继续生成其余诊断文件。
 - `U8诊断工具.exe`（由 Windows 构建产生）提供只有“开始诊断”一个主要按钮的中文界面；不会要求普通使用者打开命令行、安装 Python 或查找日志文件。
+- `U8Assistant.exe`（由 Windows 构建产生）提供人工辅助模式：任务搜索、原始 PDF 查看、保守业务分类、可复制的可靠字段、按业务类型生成的录入清单与自动保存的完成状态；不会自动操作 U8。
 
 ## 安装与启动
 
@@ -63,7 +64,7 @@ PDF outline 页码是 **从 1 开始** 的；PyMuPDF 的 `load_page()` 是 **从
 build_windows.bat
 ```
 
-脚本会安装构建依赖并生成 `dist/U8诊断工具.exe`。之后把这个 EXE 交给普通使用者即可；他们的电脑不需要 Python、pip 或命令行。
+脚本会安装构建依赖并生成 `dist/U8诊断工具.exe` 和 `dist/U8Assistant.exe`。之后把 EXE 交给普通使用者即可；他们的电脑不需要 Python、pip 或命令行。
 
 `U8诊断工具.spec` 配置了 PyInstaller one-file/windowed 构建，并纳入 pywinauto、comtypes、Pillow 与 pywin32 所需的 hidden imports。请在目标 Windows 版本上实际启动一次 EXE 后再分发。
 
@@ -73,10 +74,26 @@ macOS 不可交叉编译 Windows EXE，因此项目已包含 `.github/workflows/
 
 1. 推送任意分支，或在 GitHub 的 **Actions** 页面手动运行 **Build U8 Diagnostics Windows EXE**。
 2. GitHub 的 Windows 虚拟机会安装 Python 3.11 依赖、运行单元测试，并执行 PyInstaller。
-3. 在该运行记录底部的 **Artifacts** 下载 `U8诊断工具-windows`。
-4. 解压下载内容，得到 `U8诊断工具.exe`；将它复制到机房电脑后即可双击运行。
+3. 在该运行记录底部的 **Artifacts** 下载 `U8Assistant-windows`。
+4. 解压下载内容，得到 `U8诊断工具.exe` 和 `U8Assistant.exe`；将它们复制到机房电脑后即可双击运行。
 
-这个 workflow 使用 GitHub 托管的 Windows 环境，不会在 macOS 上假装生成可用的 EXE。它与本地 `build_windows.bat` 产出相同的 `dist/U8诊断工具.exe`。
+这个 workflow 使用 GitHub 托管的 Windows 环境，不会在 macOS 上假装生成可用的 EXE。它与本地 `build_windows.bat` 产出相同的两个 EXE。
+
+## U8Assistant 人工辅助模式
+
+`U8Assistant.exe` 当前只帮助人工录入，绝不点击、输入、保存、审核、记账、结账或访问 U8 数据库。
+
+- 左侧任务列表支持任务号、日期、标题、已提取的往来单位/发票号和关键词搜索；“跳到下一个未完成任务”优先定位未标记为“已完成”的任务。
+- 中间始终显示任务编号、日期、标题、子任务、PDF 对应页及原始 PDF 页面。页面只按需渲染。
+- 右侧“本任务录入数据”只展示 bookmark 和 PDF 原生文本能可靠确认的字段。扫描页无可用文本时，显示“未提取，请查看原始凭证”，且复制按钮保持禁用；不会 OCR 或猜测。
+- 复制字段后，切换到 U8 并使用 `Ctrl+V`。快捷键：`Ctrl+C` 重新复制当前已选复制值，`Ctrl+→`/`Ctrl+←` 切换任务，`Ctrl+Enter` 标记任务已完成。快捷键只在 U8Assistant 前台时生效。
+- 清单由保守业务分类（采购、销售、收款、付款、库存、固定资产、费用、工资、税务、总账、月末处理、其他/未知）决定。未知任务仅显示“已查看原始凭证 / 待确认”，不会默认要求审核、付款或结算。
+- 完成状态和清单勾选保存到本机 `data/progress.json`；打包 EXE 时保存在用户的本地应用数据目录，关闭软件后仍会保留。
+- “检测 U8”入口保留，但在没有经诊断确认的 selector 配置前只提示“当前仅支持人工辅助模式”。
+
+### 将原始 PDF 内置到 U8Assistant.exe
+
+为了让普通使用者不用选择或填写 PDF 路径，开发者可在**获授权后**把 `业财税2023.pdf` 放入 `assets/`，再运行 Windows 构建。`U8Assistant.spec` 会自动将它打入 EXE。PDF 默认被 `.gitignore` 排除，避免未经许可上传到 GitHub。未内置时，程序会自动查找 EXE 同目录或 Downloads 中的同名 PDF；找不到时仍可查看任务和进度，但无法显示原始页面。
 
 ### 技术人员：命令行 Probe（保留）
 
@@ -124,12 +141,17 @@ u8-assistant/
 ├── diagnostic_main.py          # U8诊断工具.exe 的 GUI 入口
 ├── build_windows.bat           # Windows 开发者唯一构建步骤
 ├── U8诊断工具.spec              # PyInstaller one-file/windowed 配置
+├── U8Assistant.spec             # 人工辅助 EXE 配置
+├── assets/                      # 获授权后可放入待内置 PDF
 ├── src/
 │   ├── gui/diagnostic_window.py
 │   └── u8/
 │       ├── probe.py             # 只读采集
 │       └── diagnostic_bundle.py # 桌面 ZIP 打包
-└── tests/test_diagnostic_bundle.py
+│   └── tasks/
+│       ├── business_data.py     # 保守数据/清单模型
+│       └── progress.py          # 本地完成状态
+└── tests/
 ```
 
 未来的 `U8Assistant.exe` 也应采用相同原则：终端用户双击程序、在 GUI 中选择任务和确认步骤；Python、pip、日志路径及自动化实现细节均由程序隐藏。本阶段仍未实现任何真实填写功能。

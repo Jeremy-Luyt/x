@@ -16,6 +16,12 @@ echo Building U8 diagnostics executable...
 py -3.11 -m PyInstaller --noconfirm --clean "U8诊断工具.spec"
 if errorlevel 1 exit /b 1
 
+echo Building U8Assistant manual-assistance executable...
+py -3.11 -m PyInstaller --noconfirm --clean "U8Assistant.spec"
+if errorlevel 1 exit /b 1
+
 echo.
-echo Build complete: dist\U8诊断工具.exe
+echo Build complete:
+echo   dist\U8诊断工具.exe
+echo   dist\U8Assistant.exe
 endlocal

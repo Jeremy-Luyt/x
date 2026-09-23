@@ -35,10 +35,16 @@ jobs:
         shell: pwsh
         run: python -m PyInstaller --noconfirm --clean "U8诊断工具.spec"
 
+      - name: Package U8Assistant manual helper
+        shell: pwsh
+        run: python -m PyInstaller --noconfirm --clean "U8Assistant.spec"
+
       - name: Upload U8 diagnostics executable
         uses: actions/upload-artifact@v4
         with:
-          name: U8诊断工具-windows
-          path: dist/U8诊断工具.exe
+          name: U8Assistant-windows
+          path: |
+            dist/U8诊断工具.exe
+            dist/U8Assistant.exe
           if-no-files-found: error
           retention-days: 14

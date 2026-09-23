@@ -14,3 +14,5 @@ dist/
 
 # Personal PDF/configuration locations are not shared.
 config/config.json
+data/progress.json
+assets/*.pdf
