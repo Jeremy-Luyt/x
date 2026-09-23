@@ -13,6 +13,7 @@ from ..pdf.page_renderer import PdfPageRenderer
 from ..tasks.business_data import TaskBusinessData, checklist_for_task, extract_task_business_data, search_text
 from ..tasks.models import Task
 from ..tasks.progress import ProgressRepository, TaskStatus, VALID_STATUSES
+from ..u8.purchase_invoice_plan import build_special_purchase_invoice_plan
 
 
 MISSING_VALUE = "未提取，请查看原始凭证"
@@ -180,10 +181,11 @@ class MainWindow:
         selector.bind("<<ComboboxSelected>>", lambda _: self._set_status(self.status_choice.get()))
         ttk.Label(status_box, text="状态会自动保存。", foreground="#555555").grid(row=1, column=0, sticky="w", pady=(4, 0))
 
-        automation_box = ttk.LabelFrame(self.right, text="U8 自动化", padding=8)
+        automation_box = ttk.LabelFrame(self.right, text="U8 自动录入辅助", padding=8)
         automation_box.pack(fill=tk.X)
-        ttk.Label(automation_box, text="尚未配置", foreground="#8a4b00").grid(row=0, column=0, sticky="w")
-        ttk.Button(automation_box, text="检测 U8", command=self._show_manual_mode_message).grid(row=1, column=0, sticky="w", pady=(5, 0))
+        ttk.Label(automation_box, text="专用采购发票：准备中", foreground="#1f5f99").grid(row=0, column=0, sticky="w")
+        ttk.Button(automation_box, text="生成本任务自动录入预览", command=self._show_invoice_dry_run).grid(row=1, column=0, sticky="ew", pady=(5, 0))
+        ttk.Label(automation_box, text="预览只列出可靠数据；每一步仍须人工确认。", foreground="#555555", wraplength=325).grid(row=2, column=0, sticky="w", pady=(4, 0))
 
     def _data_row(self, parent: ttk.Frame, label: str, value: str | None, copy_label: str | None, row: int) -> None:
         ttk.Label(parent, text=f"{label}：").grid(row=row, column=0, sticky="nw", pady=2)
@@ -331,5 +333,8 @@ class MainWindow:
         self.status_choice.set("已完成")
         return "break"
 
-    def _show_manual_mode_message(self) -> None:
-        messagebox.showinfo("人工辅助模式", "当前仅支持人工辅助模式。\n\n请使用 PDF 页面、复制按钮和录入清单完成手工录入。\n不会自动操作 U8。")
+    def _show_invoice_dry_run(self) -> None:
+        task = self.tasks[self.selected_index]
+        plan = build_special_purchase_invoice_plan(self._data_for_task(task))
+        messagebox.showinfo("自动录入预览", "\n".join(plan.preview_lines()))
+        self.logger.info("[DRY RUN] purchase invoice plan for task=%s\n%s", task.task_id, "\n".join(plan.preview_lines()))
