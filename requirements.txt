@@ -1,0 +1,5 @@
+# Target runtime: Python 3.11+ (the parser is also tested with the local Python where possible)
+PyMuPDF>=1.24
+Pillow>=10.0
+# Used only in a real Windows lab, never by the default Mock controller.
+pywinauto>=0.6.9; platform_system == "Windows"

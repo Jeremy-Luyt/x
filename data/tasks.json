@@ -1,0 +1,1566 @@
+{
+  "schema_version": 1,
+  "source_pdf": "/Users/jeremylu/Downloads/业财税2023.pdf",
+  "tasks": [
+    {
+      "task_id": "1",
+      "raw_title": "任务【1】 12月1日 取现备用。",
+      "date": "12月1日",
+      "title": "取现备用",
+      "start_page": 1,
+      "end_page": 1,
+      "subtasks": [
+        {
+          "name": "任务1-1",
+          "page": 1
+        }
+      ],
+      "source_pages": [
+        1
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "2",
+      "raw_title": "任务【2】 12月1日 职工参加展销会借支。",
+      "date": "12月1日",
+      "title": "职工参加展销会借支",
+      "start_page": 2,
+      "end_page": 4,
+      "subtasks": [
+        {
+          "name": "任务2-1",
+          "page": 2
+        },
+        {
+          "name": "任务2-2",
+          "page": 3
+        },
+        {
+          "name": "任务2-3",
+          "page": 4
+        }
+      ],
+      "source_pages": [
+        2,
+        3,
+        4
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "3",
+      "raw_title": "任务【3】 12月1日 采购，验收入库。",
+      "date": "12月1日",
+      "title": "采购，验收入库",
+      "start_page": 5,
+      "end_page": 7,
+      "subtasks": [
+        {
+          "name": "任务3-1",
+          "page": 5
+        },
+        {
+          "name": "任务3-2",
+          "page": 6
+        }
+      ],
+      "source_pages": [
+        5,
+        6,
+        7
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "4",
+      "raw_title": "任务【4】 12月2日 采购材料，验收入库。",
+      "date": "12月2日",
+      "title": "采购材料，验收入库",
+      "start_page": 8,
+      "end_page": 9,
+      "subtasks": [
+        {
+          "name": "任务4-1",
+          "page": 7
+        },
+        {
+          "name": "任务4-2",
+          "page": 8
+        },
+        {
+          "name": "任务4-3",
+          "page": 9
+        }
+      ],
+      "source_pages": [
+        8,
+        9
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "5",
+      "raw_title": "任务【5】 12月2日 销售产品，于当日办妥托收承付结算手续。",
+      "date": "12月2日",
+      "title": "销售产品，于当日办妥托收承付结算手续",
+      "start_page": 10,
+      "end_page": 12,
+      "subtasks": [
+        {
+          "name": "任务5-1",
+          "page": 10
+        },
+        {
+          "name": "任务5-2",
+          "page": 11
+        },
+        {
+          "name": "任务5-3",
+          "page": 12
+        }
+      ],
+      "source_pages": [
+        10,
+        11,
+        12
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "6",
+      "raw_title": "任务【6】 12月2日 支付公司车队车辆交强险和车船税。",
+      "date": "12月2日",
+      "title": "支付公司车队车辆交强险和车船税",
+      "start_page": 13,
+      "end_page": 14,
+      "subtasks": [
+        {
+          "name": "任务6-1",
+          "page": 13
+        },
+        {
+          "name": "任务6-2",
+          "page": 14
+        }
+      ],
+      "source_pages": [
+        13,
+        14
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "7",
+      "raw_title": "任务【7】 12月3日 上月采购的材料验收入库。",
+      "date": "12月3日",
+      "title": "上月采购的材料验收入库",
+      "start_page": 15,
+      "end_page": 15,
+      "subtasks": [
+        {
+          "name": "任务7-1",
+          "page": 15
+        }
+      ],
+      "source_pages": [
+        15
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "8",
+      "raw_title": "任务【8】 12月3日 上月采购的材料验收入库(实收29500公斤，差额为正常损耗)。",
+      "date": "12月3日",
+      "title": "上月采购的材料验收入库(实收29500公斤，差额为正常损耗)",
+      "start_page": 16,
+      "end_page": 16,
+      "subtasks": [
+        {
+          "name": "任务8-1",
+          "page": 16
+        }
+      ],
+      "source_pages": [
+        16
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "9",
+      "raw_title": "任务【9】 12月3日 根据相关部门申请，签发银行汇票。",
+      "date": "12月3日",
+      "title": "根据相关部门申请，签发银行汇票",
+      "start_page": 17,
+      "end_page": 18,
+      "subtasks": [
+        {
+          "name": "任务9-1",
+          "page": 17
+        },
+        {
+          "name": "任务9-2",
+          "page": 18
+        }
+      ],
+      "source_pages": [
+        17,
+        18
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "10",
+      "raw_title": "任务【10】 12月3日 销售产品，已收到对方开出的转账支票。",
+      "date": "12月3日",
+      "title": "销售产品，已收到对方开出的转账支票",
+      "start_page": 19,
+      "end_page": 21,
+      "subtasks": [
+        {
+          "name": "任务10-1",
+          "page": 19
+        },
+        {
+          "name": "任务10-2",
+          "page": 20
+        },
+        {
+          "name": "任务10-3",
+          "page": 21
+        }
+      ],
+      "source_pages": [
+        19,
+        20,
+        21
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "11",
+      "raw_title": "任务【11】 12月4日 支付采购工程物资款。",
+      "date": "12月4日",
+      "title": "支付采购工程物资款",
+      "start_page": 22,
+      "end_page": 23,
+      "subtasks": [
+        {
+          "name": "任务11-1",
+          "page": 22
+        },
+        {
+          "name": "任务11-2",
+          "page": 23
+        }
+      ],
+      "source_pages": [
+        22,
+        23
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "12",
+      "raw_title": "任务【12】 12月4日 厂部报销费用。",
+      "date": "12月4日",
+      "title": "厂部报销费用",
+      "start_page": 24,
+      "end_page": 24,
+      "subtasks": [
+        {
+          "name": "任务12-1",
+          "page": 24
+        }
+      ],
+      "source_pages": [
+        24
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "13",
+      "raw_title": "任务【13】 12月4日 销售部报销业务招待费。",
+      "date": "12月4日",
+      "title": "销售部报销业务招待费",
+      "start_page": 25,
+      "end_page": 25,
+      "subtasks": [
+        {
+          "name": "任务13-1",
+          "page": 25
+        }
+      ],
+      "source_pages": [
+        25
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "14",
+      "raw_title": "任务【14】 12月4日 应供应科申请，预付材料款。",
+      "date": "12月4日",
+      "title": "应供应科申请，预付材料款",
+      "start_page": 26,
+      "end_page": 27,
+      "subtasks": [
+        {
+          "name": "任务14-1",
+          "page": 26
+        },
+        {
+          "name": "任务14-2",
+          "page": 27
+        }
+      ],
+      "source_pages": [
+        26,
+        27
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "15",
+      "raw_title": "任务【15】 12月7日 国债到期兑现。",
+      "date": "12月7日",
+      "title": "国债到期兑现",
+      "start_page": 28,
+      "end_page": 28,
+      "subtasks": [
+        {
+          "name": "任务15-1",
+          "page": 28
+        }
+      ],
+      "source_pages": [
+        28
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "16",
+      "raw_title": "任务【16】 12月7日 收到两家公司前欠购货款。",
+      "date": "12月7日",
+      "title": "收到两家公司前欠购货款",
+      "start_page": 29,
+      "end_page": 30,
+      "subtasks": [
+        {
+          "name": "任务16-1",
+          "page": 29
+        },
+        {
+          "name": "任务16-2",
+          "page": 30
+        }
+      ],
+      "source_pages": [
+        29,
+        30
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "17",
+      "raw_title": "任务【17】 12月7日 采购材料，验收入库。（款项原已预付）",
+      "date": "12月7日",
+      "title": "采购材料，验收入库。（款项原已预付）",
+      "start_page": 31,
+      "end_page": 33,
+      "subtasks": [
+        {
+          "name": "任务17-1",
+          "page": 31
+        },
+        {
+          "name": "任务17-2",
+          "page": 32
+        },
+        {
+          "name": "任务17-3",
+          "page": 33
+        }
+      ],
+      "source_pages": [
+        31,
+        32,
+        33
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "18",
+      "raw_title": "任务【18】 12月7日 上交上月欠交的增值税、城建税和教育费附加。",
+      "date": "12月7日",
+      "title": "上交上月欠交的增值税、城建税和教育费附加",
+      "start_page": 34,
+      "end_page": 34,
+      "subtasks": [
+        {
+          "name": "任务18-1",
+          "page": 34
+        }
+      ],
+      "source_pages": [
+        34
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "19",
+      "raw_title": "任务【19】 12月7日 收到出租房屋租金。",
+      "date": "12月7日",
+      "title": "收到出租房屋租金",
+      "start_page": 35,
+      "end_page": 39,
+      "subtasks": [
+        {
+          "name": "任务19-1",
+          "page": 35
+        },
+        {
+          "name": "任务19-2",
+          "page": 36
+        },
+        {
+          "name": "任务19-3",
+          "page": 37
+        },
+        {
+          "name": "任务19-4",
+          "page": 38
+        },
+        {
+          "name": "任务19-5",
+          "page": 39
+        }
+      ],
+      "source_pages": [
+        35,
+        36,
+        37,
+        38,
+        39
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "20",
+      "raw_title": "任务【20】 12月7日 收到工程物资。",
+      "date": "12月7日",
+      "title": "收到工程物资",
+      "start_page": 40,
+      "end_page": 40,
+      "subtasks": [
+        {
+          "name": "任务20-1",
+          "page": 40
+        }
+      ],
+      "source_pages": [
+        40
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "21",
+      "raw_title": "任务【21】 12月7日 采购材料，验收入库，结清银行汇票款。同时收到银行汇票多余款收账通知，退回多余款。",
+      "date": "12月7日",
+      "title": "采购材料，验收入库，结清银行汇票款。同时收到银行汇票多余款收账通知，退回多余款",
+      "start_page": 41,
+      "end_page": 43,
+      "subtasks": [
+        {
+          "name": "任务21-1",
+          "page": 41
+        },
+        {
+          "name": "任务21-2",
+          "page": 42
+        },
+        {
+          "name": "任务21-3",
+          "page": 43
+        }
+      ],
+      "source_pages": [
+        41,
+        42,
+        43
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "22",
+      "raw_title": "任务【22】 12月8日 采购材料，验收入库。",
+      "date": "12月8日",
+      "title": "采购材料，验收入库",
+      "start_page": 44,
+      "end_page": 45,
+      "subtasks": [
+        {
+          "name": "任务22-1",
+          "page": 44
+        },
+        {
+          "name": "任务22-2",
+          "page": 45
+        }
+      ],
+      "source_pages": [
+        44,
+        45
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "23",
+      "raw_title": "任务【23】 12月8日 支付本月吴副总经理的房租。",
+      "date": "12月8日",
+      "title": "支付本月吴副总经理的房租",
+      "start_page": 46,
+      "end_page": 47,
+      "subtasks": [
+        {
+          "name": "任务23-1",
+          "page": 46
+        },
+        {
+          "name": "任务23-2",
+          "page": 47
+        }
+      ],
+      "source_pages": [
+        46,
+        47
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "24",
+      "raw_title": "任务【24】 12月8日 销售产品，款项已收。",
+      "date": "12月8日",
+      "title": "销售产品，款项已收",
+      "start_page": 48,
+      "end_page": 49,
+      "subtasks": [
+        {
+          "name": "任务24-1",
+          "page": 48
+        },
+        {
+          "name": "任务24-2",
+          "page": 49
+        }
+      ],
+      "source_pages": [
+        48,
+        49
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "25",
+      "raw_title": "任务【25】 12月8日 支付到期票据款。",
+      "date": "12月8日",
+      "title": "支付到期票据款",
+      "start_page": 50,
+      "end_page": 50,
+      "subtasks": [
+        {
+          "name": "任务25-1",
+          "page": 50
+        }
+      ],
+      "source_pages": [
+        50
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "26",
+      "raw_title": "任务【26】 12月9日 完工产品交库。",
+      "date": "12月9日",
+      "title": "完工产品交库",
+      "start_page": 51,
+      "end_page": 51,
+      "subtasks": [
+        {
+          "name": "任务26-1",
+          "page": 51
+        }
+      ],
+      "source_pages": [
+        51
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "27",
+      "raw_title": "任务【27】 12月9日 职工差旅费(票据略)报销。",
+      "date": "12月9日",
+      "title": "职工差旅费(票据略)报销",
+      "start_page": 52,
+      "end_page": 54,
+      "subtasks": [
+        {
+          "name": "任务27-1",
+          "page": 52
+        },
+        {
+          "name": "任务27-2",
+          "page": 53
+        },
+        {
+          "name": "任务27-3",
+          "page": 54
+        }
+      ],
+      "source_pages": [
+        52,
+        53,
+        54
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "28",
+      "raw_title": "任务【28】 12月9日 采购材料，验收入库。",
+      "date": "12月9日",
+      "title": "采购材料，验收入库",
+      "start_page": 55,
+      "end_page": 57,
+      "subtasks": [
+        {
+          "name": "任务28-1",
+          "page": 55
+        },
+        {
+          "name": "任务28-2",
+          "page": 56
+        },
+        {
+          "name": "任务28-3",
+          "page": 57
+        }
+      ],
+      "source_pages": [
+        55,
+        56,
+        57
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "29",
+      "raw_title": "任务【29】 12月10日 销售产品，部分款项原已预收。",
+      "date": "12月10日",
+      "title": "销售产品，部分款项原已预收",
+      "start_page": 58,
+      "end_page": 58,
+      "subtasks": [
+        {
+          "name": "任务29-1",
+          "page": 58
+        }
+      ],
+      "source_pages": [
+        58
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "30",
+      "raw_title": "任务【30】 12月10日 收汽车队吊运物资款。",
+      "date": "12月10日",
+      "title": "收汽车队吊运物资款",
+      "start_page": 59,
+      "end_page": 61,
+      "subtasks": [
+        {
+          "name": "任务30-1",
+          "page": 59
+        },
+        {
+          "name": "任务30-2",
+          "page": 60
+        },
+        {
+          "name": "任务30-3",
+          "page": 61
+        }
+      ],
+      "source_pages": [
+        59,
+        60,
+        61
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "31",
+      "raw_title": "任务【31】 12月10日 申贷报告获批，所贷款项已划入本公司存款户。",
+      "date": "12月10日",
+      "title": "申贷报告获批，所贷款项已划入本公司存款户",
+      "start_page": 62,
+      "end_page": 62,
+      "subtasks": [
+        {
+          "name": "任务31-1",
+          "page": 62
+        }
+      ],
+      "source_pages": [
+        62
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "32-35",
+      "raw_title": "任务【32】—— 任务【35】",
+      "date": null,
+      "title": "",
+      "start_page": 63,
+      "end_page": 64,
+      "subtasks": [
+        {
+          "name": "任务35-1",
+          "page": 64
+        }
+      ],
+      "source_pages": [
+        63,
+        64
+      ],
+      "kind": "range",
+      "warnings": []
+    },
+    {
+      "task_id": "36",
+      "raw_title": "任务【36】 12月11日 支付本厂车队修理费。",
+      "date": "12月11日",
+      "title": "支付本厂车队修理费",
+      "start_page": 65,
+      "end_page": 66,
+      "subtasks": [
+        {
+          "name": "任务36-1",
+          "page": 65
+        },
+        {
+          "name": "任务36-2",
+          "page": 66
+        }
+      ],
+      "source_pages": [
+        65,
+        66
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "37",
+      "raw_title": "任务【37】 12月11日 收到托收款。",
+      "date": "12月11日",
+      "title": "收到托收款",
+      "start_page": 67,
+      "end_page": 67,
+      "subtasks": [
+        {
+          "name": "任务37-1",
+          "page": 67
+        }
+      ],
+      "source_pages": [
+        67
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "38",
+      "raw_title": "任务【38】 12月14日 销售产品，商业承兑汇票方式结算。",
+      "date": "12月14日",
+      "title": "销售产品，商业承兑汇票方式结算",
+      "start_page": 68,
+      "end_page": 70,
+      "subtasks": [
+        {
+          "name": "任务38-1",
+          "page": 68
+        },
+        {
+          "name": "任务38-2",
+          "page": 69
+        },
+        {
+          "name": "任务38-3",
+          "page": 70
+        }
+      ],
+      "source_pages": [
+        68,
+        69,
+        70
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "39",
+      "raw_title": "任务【39】 12月14日 采购材料，支付运杂费。材料已验收入库。",
+      "date": "12月14日",
+      "title": "采购材料，支付运杂费。材料已验收入库",
+      "start_page": 71,
+      "end_page": 73,
+      "subtasks": [
+        {
+          "name": "任务39-1",
+          "page": 71
+        },
+        {
+          "name": "任务39-2",
+          "page": 72
+        },
+        {
+          "name": "任务39-3",
+          "page": 73
+        }
+      ],
+      "source_pages": [
+        71,
+        72,
+        73
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "40",
+      "raw_title": "任务【40】 12月14日 销售产品（当日即期汇率1：6.20）。",
+      "date": "12月14日",
+      "title": "销售产品（当日即期汇率1：6.20）",
+      "start_page": 74,
+      "end_page": 75,
+      "subtasks": [
+        {
+          "name": "任务40-1",
+          "page": 74
+        },
+        {
+          "name": "任务40-2",
+          "page": 75
+        }
+      ],
+      "source_pages": [
+        74,
+        75
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "41",
+      "raw_title": "任务【41】 12月14日 采购材料，验收入库。",
+      "date": "12月14日",
+      "title": "采购材料，验收入库",
+      "start_page": 76,
+      "end_page": 78,
+      "subtasks": [
+        {
+          "name": "任务41-1",
+          "page": 76
+        },
+        {
+          "name": "任务41-2",
+          "page": 77
+        },
+        {
+          "name": "任务41-3",
+          "page": 78
+        }
+      ],
+      "source_pages": [
+        76,
+        77,
+        78
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "42",
+      "raw_title": "任务【42】 12月15日 从中国银行买美元（1：6.25），用以支付产品运费，按协议，该运费由美国MD公司承担（当日即期汇率1：6.20）。",
+      "date": "12月15日",
+      "title": "从中国银行买美元（1：6.25），用以支付产品运费，按协议，该运费由美国MD公司承担（当日即期汇率1：6.20）",
+      "start_page": 79,
+      "end_page": 81,
+      "subtasks": [
+        {
+          "name": "任务42-1",
+          "page": 79
+        },
+        {
+          "name": "任务42-2",
+          "page": 80
+        },
+        {
+          "name": "任务42-3",
+          "page": 81
+        }
+      ],
+      "source_pages": [
+        79,
+        80,
+        81
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "43",
+      "raw_title": "任务【43】 12月18日 支付各车间设备及厂房修理费。",
+      "date": "12月18日",
+      "title": "支付各车间设备及厂房修理费",
+      "start_page": 82,
+      "end_page": 84,
+      "subtasks": [
+        {
+          "name": "任务43-1",
+          "page": 82
+        },
+        {
+          "name": "任务43-2",
+          "page": 83
+        },
+        {
+          "name": "任务43-3",
+          "page": 84
+        }
+      ],
+      "source_pages": [
+        82,
+        83,
+        84
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "44",
+      "raw_title": "任务【44】 12月18日 支付购货款。",
+      "date": "12月18日",
+      "title": "支付购货款",
+      "start_page": 85,
+      "end_page": 85,
+      "subtasks": [
+        {
+          "name": "任务44-1",
+          "page": 85
+        }
+      ],
+      "source_pages": [
+        85
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "45",
+      "raw_title": "任务【45】 12月21日 付借款利息。",
+      "date": "12月21日",
+      "title": "付借款利息",
+      "start_page": 86,
+      "end_page": 86,
+      "subtasks": [
+        {
+          "name": "任务45-1",
+          "page": 86
+        }
+      ],
+      "source_pages": [
+        86
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "46",
+      "raw_title": "【任务46】 12月24日 票据贴现，贴现净额已转入公司存款户。",
+      "date": "12月24日",
+      "title": "票据贴现，贴现净额已转入公司存款户",
+      "start_page": 87,
+      "end_page": 89,
+      "subtasks": [
+        {
+          "name": "任务46-1",
+          "page": 87
+        },
+        {
+          "name": "任务46-2",
+          "page": 88
+        },
+        {
+          "name": "任务46-3",
+          "page": 89
+        }
+      ],
+      "source_pages": [
+        87,
+        88,
+        89
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "47",
+      "raw_title": "【任务47】 12月24日 收到增值税税收返还款。",
+      "date": "12月24日",
+      "title": "收到增值税税收返还款",
+      "start_page": 90,
+      "end_page": 90,
+      "subtasks": [
+        {
+          "name": "任务47-1",
+          "page": 90
+        }
+      ],
+      "source_pages": [
+        90
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "48",
+      "raw_title": "【任务48】24日，接银行相关收款通知，上缴本月应交的五项社会保险费、住房公积金和个人所得税。",
+      "date": null,
+      "title": "24日，接银行相关收款通知，上缴本月应交的五项社会保险费、住房公积金和个人所得税",
+      "start_page": 91,
+      "end_page": 97,
+      "subtasks": [
+        {
+          "name": "任务48-1",
+          "page": 91
+        },
+        {
+          "name": "任务48-2",
+          "page": 92
+        },
+        {
+          "name": "任务48-3",
+          "page": 93
+        },
+        {
+          "name": "任务48-4",
+          "page": 94
+        },
+        {
+          "name": "任务48-5",
+          "page": 95
+        },
+        {
+          "name": "任务48-6",
+          "page": 96
+        },
+        {
+          "name": "任务48-7",
+          "page": 97
+        }
+      ],
+      "source_pages": [
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "49",
+      "raw_title": "【任务49】 12月24日 初加工车间生产的350Y搅拌机废品部件回收废铁750公斤，生产的2400和泥机废品部件回收废铁1280公斤；精加工车间生产的350Y搅拌机废品部件回收废铁70公斤，生产的2400和泥机废品部件回收废铁620公斤。废铁实际价0.35元/公斤。",
+      "date": "12月24日",
+      "title": "初加工车间生产的350Y搅拌机废品部件回收废铁750公斤，生产的2400和泥机废品部件回收废铁1280公斤；精加工车间生产的350Y搅拌机废品部件回收废铁70公斤，生产的2400和泥机废品部件回收废铁620公斤。废铁实际价0.35元/公斤",
+      "start_page": 98,
+      "end_page": 98,
+      "subtasks": [
+        {
+          "name": "任务49-1",
+          "page": 98
+        }
+      ],
+      "source_pages": [
+        98
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "50",
+      "raw_title": "【任务50】 12月28日 验收长沙市金属公司送来的原材料入库。",
+      "date": "12月28日",
+      "title": "验收长沙市金属公司送来的原材料入库",
+      "start_page": 99,
+      "end_page": 99,
+      "subtasks": [
+        {
+          "name": "任务50-1",
+          "page": 99
+        }
+      ],
+      "source_pages": [
+        99
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "51",
+      "raw_title": "【任务51】 12月28日 购入一项搅拌机生产专利技术，款项已支付。",
+      "date": "12月28日",
+      "title": "购入一项搅拌机生产专利技术，款项已支付",
+      "start_page": 100,
+      "end_page": 102,
+      "subtasks": [
+        {
+          "name": "任务51-1",
+          "page": 100
+        },
+        {
+          "name": "任务51-2",
+          "page": 101
+        },
+        {
+          "name": "任务51-3",
+          "page": 102
+        }
+      ],
+      "source_pages": [
+        100,
+        101,
+        102
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "52",
+      "raw_title": "【任务52】 12月28日 支付北京新特公司广告费。",
+      "date": "12月28日",
+      "title": "支付北京新特公司广告费",
+      "start_page": 103,
+      "end_page": 105,
+      "subtasks": [
+        {
+          "name": "任务52-1",
+          "page": 103
+        },
+        {
+          "name": "任务52-2",
+          "page": 104
+        },
+        {
+          "name": "任务52-3",
+          "page": 105
+        }
+      ],
+      "source_pages": [
+        103,
+        104,
+        105
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "53",
+      "raw_title": "【任务53】 12月28日 购设备一台。（该设备预计使用年限10年，净残值2000元）。",
+      "date": "12月28日",
+      "title": "购设备一台。（该设备预计使用年限10年，净残值2000元）",
+      "start_page": 106,
+      "end_page": 109,
+      "subtasks": [
+        {
+          "name": "任务53-1",
+          "page": 106
+        },
+        {
+          "name": "任务53-2",
+          "page": 107
+        },
+        {
+          "name": "任务53-3",
+          "page": 108
+        },
+        {
+          "name": "任务53-4",
+          "page": 109
+        }
+      ],
+      "source_pages": [
+        106,
+        107,
+        108,
+        109
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "54",
+      "raw_title": "【任务54】 12月28日 销售材料，款项已收。",
+      "date": "12月28日",
+      "title": "销售材料，款项已收",
+      "start_page": 110,
+      "end_page": 111,
+      "subtasks": [
+        {
+          "name": "任务54-1",
+          "page": 110
+        },
+        {
+          "name": "任务54-2",
+          "page": 111
+        }
+      ],
+      "source_pages": [
+        110,
+        111
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "55-68",
+      "raw_title": "【任务55】——【任务68】",
+      "date": null,
+      "title": "",
+      "start_page": 112,
+      "end_page": 112,
+      "subtasks": [],
+      "source_pages": [
+        112
+      ],
+      "kind": "range",
+      "warnings": []
+    },
+    {
+      "task_id": "69",
+      "raw_title": "【任务69】 12月31日 期末存货盘点。",
+      "date": "12月31日",
+      "title": "期末存货盘点",
+      "start_page": 113,
+      "end_page": 113,
+      "subtasks": [
+        {
+          "name": "任务69-1",
+          "page": 113
+        }
+      ],
+      "source_pages": [
+        113
+      ],
+      "kind": "task",
+      "warnings": [
+        "non_increasing_next_task_page:113"
+      ]
+    },
+    {
+      "task_id": "70",
+      "raw_title": "【任务70】 12月31日 材料成本差异结转。",
+      "date": "12月31日",
+      "title": "材料成本差异结转",
+      "start_page": 113,
+      "end_page": 113,
+      "subtasks": [],
+      "source_pages": [
+        113
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "71",
+      "raw_title": "【任务71】 12月31日 计算本月固定资产折旧。",
+      "date": "12月31日",
+      "title": "计算本月固定资产折旧",
+      "start_page": 114,
+      "end_page": 114,
+      "subtasks": [],
+      "source_pages": [
+        114
+      ],
+      "kind": "task",
+      "warnings": [
+        "non_increasing_next_task_page:114"
+      ]
+    },
+    {
+      "task_id": "72",
+      "raw_title": "【任务72】 12月31日 转让设备，款项已收到。",
+      "date": "12月31日",
+      "title": "转让设备，款项已收到",
+      "start_page": 114,
+      "end_page": 116,
+      "subtasks": [
+        {
+          "name": "任务72-1",
+          "page": 114
+        },
+        {
+          "name": "任务72-2",
+          "page": 115
+        },
+        {
+          "name": "任务72-3",
+          "page": 116
+        }
+      ],
+      "source_pages": [
+        114,
+        115,
+        116
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "73",
+      "raw_title": "【任务73】 12月31日  计提固定资产减值准备。",
+      "date": "12月31日",
+      "title": "计提固定资产减值准备",
+      "start_page": 117,
+      "end_page": 117,
+      "subtasks": [
+        {
+          "name": "任务73-1",
+          "page": 117
+        }
+      ],
+      "source_pages": [
+        117
+      ],
+      "kind": "task",
+      "warnings": [
+        "non_increasing_next_task_page:116"
+      ]
+    },
+    {
+      "task_id": "74",
+      "raw_title": "【任务74】 12月31日 处理固定资产折旧业务。",
+      "date": "12月31日",
+      "title": "处理固定资产折旧业务",
+      "start_page": 116,
+      "end_page": 116,
+      "subtasks": [],
+      "source_pages": [
+        116
+      ],
+      "kind": "task",
+      "warnings": [
+        "non_increasing_next_task_page:116"
+      ]
+    },
+    {
+      "task_id": "75",
+      "raw_title": "【任务75】 12月31日 无形资产摊销（按使用年限平均摊销，使用期限5年）。",
+      "date": "12月31日",
+      "title": "无形资产摊销（按使用年限平均摊销，使用期限5年）",
+      "start_page": 116,
+      "end_page": 117,
+      "subtasks": [],
+      "source_pages": [
+        116,
+        117
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "76",
+      "raw_title": "【任务76】 12月31日 经批准将材料盘盈盘亏转入管理费用。",
+      "date": "12月31日",
+      "title": "经批准将材料盘盈盘亏转入管理费用",
+      "start_page": 118,
+      "end_page": 118,
+      "subtasks": [
+        {
+          "name": "任务75-1",
+          "page": 118
+        }
+      ],
+      "source_pages": [
+        118
+      ],
+      "kind": "task",
+      "warnings": [
+        "no_reliable_following_task_page"
+      ]
+    },
+    {
+      "task_id": "77",
+      "raw_title": "【任务77】 12月31日 支付上月电费。",
+      "date": "12月31日",
+      "title": "支付上月电费",
+      "start_page": 119,
+      "end_page": 119,
+      "subtasks": [
+        {
+          "name": "任务77-1",
+          "page": 119
+        }
+      ],
+      "source_pages": [
+        119
+      ],
+      "kind": "task",
+      "warnings": [
+        "invalid_top_level_bookmark_page:-1",
+        "used_first_valid_subtask_page_as_start"
+      ]
+    },
+    {
+      "task_id": "78",
+      "raw_title": "【任务78】 12月31日 计提本月电费。",
+      "date": "12月31日",
+      "title": "计提本月电费",
+      "start_page": 120,
+      "end_page": 121,
+      "subtasks": [
+        {
+          "name": "任务78-1",
+          "page": 120
+        },
+        {
+          "name": "任务78-2",
+          "page": 121
+        }
+      ],
+      "source_pages": [
+        120,
+        121
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "79-92",
+      "raw_title": "【任务79】——【任务92】",
+      "date": null,
+      "title": "",
+      "start_page": 122,
+      "end_page": 122,
+      "subtasks": [],
+      "source_pages": [
+        122
+      ],
+      "kind": "range",
+      "warnings": []
+    },
+    {
+      "task_id": "93",
+      "raw_title": "【任务93】 12月31日 按供应科通知，计提存货跌价准备。",
+      "date": "12月31日",
+      "title": "按供应科通知，计提存货跌价准备",
+      "start_page": 123,
+      "end_page": 124,
+      "subtasks": [],
+      "source_pages": [
+        123,
+        124
+      ],
+      "kind": "task",
+      "warnings": []
+    },
+    {
+      "task_id": "94-101",
+      "raw_title": "【任务94】——【任务101】",
+      "date": null,
+      "title": "",
+      "start_page": 125,
+      "end_page": 125,
+      "subtasks": [],
+      "source_pages": [
+        125
+      ],
+      "kind": "range",
+      "warnings": [
+        "non_increasing_next_task_page:125"
+      ]
+    },
+    {
+      "task_id": "102",
+      "raw_title": "【任务102】 12月31日 按董事会决议计提法定盈余公积金和任意盈余公积金，对投资者分配利润，并进行账务处理。",
+      "date": "12月31日",
+      "title": "按董事会决议计提法定盈余公积金和任意盈余公积金，对投资者分配利润，并进行账务处理",
+      "start_page": 125,
+      "end_page": 125,
+      "subtasks": [
+        {
+          "name": "任务102-1",
+          "page": 125
+        }
+      ],
+      "source_pages": [
+        125
+      ],
+      "kind": "task",
+      "warnings": [
+        "non_increasing_next_task_page:1"
+      ]
+    },
+    {
+      "task_id": "103",
+      "raw_title": "【任务103】 12月31日 进行利润和利润分配的年终清算。",
+      "date": "12月31日",
+      "title": "进行利润和利润分配的年终清算",
+      "start_page": 1,
+      "end_page": 1,
+      "subtasks": [],
+      "source_pages": [
+        1
+      ],
+      "kind": "task",
+      "warnings": [
+        "no_reliable_following_task_page"
+      ]
+    }
+  ]
+}

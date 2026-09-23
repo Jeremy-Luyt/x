@@ -1,0 +1,6 @@
+{
+  "pdf_path": "C:/path/to/业财税2023.pdf",
+  "dry_run": true,
+  "allow_automatic_save": false,
+  "u8_backend": "mock"
+}
