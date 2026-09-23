@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 from src.u8.diagnostic_bundle import create_diagnostic_zip
 from src.u8.probe import (BackendResult, ErrorRecorder, _control_stats, _create_output_dir,
-                          _bounded_call, _matches_u8, _safe_label, _window_record, list_top_windows, run_probe,
+                          _bounded_call, _json_safe, _matches_u8, _safe_label, _window_record, list_top_windows, run_probe,
                           write_summary)
 
 
@@ -57,6 +57,9 @@ class WindowWithDeniedElement(FakeWindow):
 
 
 class ProbeReportTests(unittest.TestCase):
+    def test_invalid_win32_title_surrogate_is_replaced_before_json_output(self) -> None:
+        self.assertEqual(_json_safe({"title": "bad\ud991title"})["title"], "bad?title")
+
     def test_probe_window_is_not_mistaken_for_u8(self) -> None:
         self.assertFalse(_matches_u8({"title": "U8 环境诊断工具"}))
         self.assertTrue(_matches_u8({"title": "新道 U8"}))

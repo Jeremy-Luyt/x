@@ -556,9 +556,22 @@ def _notify(progress: ProgressCallback | None, message: str) -> None:
 
 def _write_json(path: Path, value: Any, errors: ErrorRecorder, context: str) -> None:
     try:
-        path.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
+        path.write_text(json.dumps(_json_safe(value), ensure_ascii=False, indent=2), encoding="utf-8")
     except Exception as exc:
         errors.record(context, exc)
+
+
+def _json_safe(value: Any) -> Any:
+    """Replace invalid Win32 title surrogates instead of losing an entire report."""
+    if isinstance(value, str):
+        return value.encode("utf-8", errors="replace").decode("utf-8")
+    if isinstance(value, dict):
+        return {str(_json_safe(key)): _json_safe(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_json_safe(item) for item in value]
+    if isinstance(value, tuple):
+        return [_json_safe(item) for item in value]
+    return value
 
 
 def _write_text(path: Path, value: str, errors: ErrorRecorder, context: str) -> None:
