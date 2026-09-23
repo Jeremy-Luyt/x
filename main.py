@@ -73,9 +73,16 @@ def main() -> int:
         args = parser.parse_args()
         writable_root = _writable_root()
         logger = configure_logging(writable_root)
+        static_pages_dir = RESOURCE_ROOT / "assets" / "rendered_pages"
         try:
             pdf_path = locate_pdf(args.pdf)
         except FileNotFoundError:
+            pdf_path = None
+        # The Win7 x86 frozen build contains verified static JPEG pages instead
+        # of PyMuPDF. Ignore any same-named external PDF so native fitz is never
+        # imported at runtime on that target.
+        if getattr(sys, "frozen", False) and (static_pages_dir / "manifest.json").is_file():
+            logger.info("Using bundled static PDF pages; runtime PyMuPDF is disabled.")
             pdf_path = None
         bundled_tasks = RESOURCE_ROOT / "data" / "tasks.json"
         if getattr(sys, "frozen", False) and bundled_tasks.is_file():
@@ -94,7 +101,6 @@ def main() -> int:
         startup_logger.info("stage: initializing Tkinter GUI")
         import tkinter as tk
         root = tk.Tk()
-        static_pages_dir = RESOURCE_ROOT / "assets" / "rendered_pages"
         MainWindow(root, tasks, pdf_path, writable_root, logger, static_pages_dir)
         startup_logger.info("stage: GUI ready")
         root.mainloop()
