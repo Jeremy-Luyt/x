@@ -7,7 +7,6 @@ Windows accessibility/window metadata and optionally captures screenshots.
 from __future__ import annotations
 
 import argparse
-import contextlib
 import ctypes
 import io
 import json
@@ -25,6 +24,9 @@ from typing import Any, Callable, Iterable, Literal
 
 
 U8_WORDS = ("u8", "用友", "企业应用平台", "新道")
+# The probe's own title deliberately contains U8 so ordinary users know what it
+# is for.  It is never evidence of a running U8 business application.
+PROBE_WINDOW_TITLE_MARKERS = ("环境诊断工具",)
 INTERACTIVE_TYPES = {
     "Edit", "Button", "ComboBox", "CheckBox", "RadioButton", "TreeView", "List",
     "ListItem", "DataGrid", "DataItem", "MenuItem", "TabItem",
@@ -190,7 +192,8 @@ def _candidate_record(window: Any, errors: ErrorRecorder, context: str) -> dict[
 
 def _matches_u8(record: dict[str, Any]) -> bool:
     title = str(record.get("title") or "").casefold()
-    return any(word in title for word in U8_WORDS)
+    return (not any(marker in title for marker in PROBE_WINDOW_TITLE_MARKERS)
+            and any(word in title for word in U8_WORDS))
 
 
 def _is_interactive(record: dict[str, Any]) -> bool:
@@ -358,19 +361,27 @@ def _inspect_window(backend: str, window: Any, index: int, errors: ErrorRecorder
     hierarchy = [{"backend": backend, "parent": None, "child": root, "depth": 0}]
     controls: list[dict[str, Any]] = []
     dialogs: list[Any] = []
+    # Desktop.windows() returns wrappers on some pywinauto/Win7 combinations,
+    # not WindowSpecification objects.  Calling print_control_identifiers on a
+    # wrapper causes a misleading AttributeError.  The structured text below
+    # is an equivalent control tree and is valid for both kinds of object.
     identifiers = io.StringIO()
-    try:
-        with contextlib.redirect_stdout(identifiers):
-            window.print_control_identifiers()
-    except Exception as exc:
-        errors.record(f"{backend}.window_{index}.print_control_identifiers", exc)
-        identifiers.write(f"print_control_identifiers failed: {type(exc).__name__}: {exc}\n")
+    identifiers.write(
+        f"=== Root window ===\n"
+        f"title: {root.get('title')!r}\nclass_name: {root.get('class_name')!r}\n"
+        f"handle: {root.get('handle')!r}\n\n=== Descendant controls ===\n"
+    )
     descendants = _safe_call([], errors, f"{backend}.window_{index}.descendants", lambda: window.descendants())
     for control_index, control in enumerate(descendants, 1):
         context = f"{backend}.window_{index}.control_{control_index}"
         try:
             record = _window_record(control, errors, context)
             controls.append(record)
+            identifiers.write(
+                f"{control_index:04d} | type={record.get('control_type')!r} | "
+                f"title={record.get('title')!r} | class={record.get('class_name')!r} | "
+                f"automation_id={record.get('automation_id')!r} | handle={record.get('handle')!r}\n"
+            )
             parent, depth = _parent_and_depth(control, _node_key(root), errors, context)
             hierarchy.append({"backend": backend, "parent": parent, "child": record, "depth": depth})
             if _is_obvious_dialog(record, root):
