@@ -25,6 +25,7 @@ from typing import Any, Callable, Iterable, Literal
 
 U8_WORDS = ("u8", "用友", "企业应用平台", "新道")
 U8_RELATED_DIALOG_WORDS = ("供应商", "存货", "参照")
+LEGACY_DIALOG_CLASSES = frozenset({"thunderrt6formdc"})
 # The probe's own title deliberately contains U8 so ordinary users know what it
 # is for.  It is never evidence of a running U8 business application.
 PROBE_WINDOW_TITLE_MARKERS = ("环境诊断工具",)
@@ -38,6 +39,12 @@ CLASS_TO_CONTROL_TYPE = {
     "sysradiobutton32": "RadioButton", "systreeview32": "TreeView",
     "syslistview32": "List", "listbox": "List", "menuitem": "MenuItem",
     "systabcontrol32": "TabItem",
+    # The diagnosed U8 pages and lookup windows use classic VB6 controls.
+    # Normalising them gives the interactive-controls report a useful grid and
+    # input inventory even where UI Automation exposes no control type.
+    "thunderrt6textbox": "Edit", "thunderrt6commandbutton": "Button",
+    "thunderrt6checkbox": "CheckBox", "thunderrt6optionbutton": "RadioButton",
+    "vsflexgrid8n": "DataGrid", "vsflexgrid8u": "DataGrid",
 }
 
 # Desktop enumeration occasionally includes a protected or hung application on
@@ -48,6 +55,8 @@ TOP_WINDOW_ENUM_TIMEOUT_SECONDS = 12.0
 TOP_WINDOW_RECORD_TIMEOUT_SECONDS = 2.0
 TOP_WINDOW_DISCOVERY_TIMEOUT_SECONDS = 30.0
 BACKEND_WINDOW_INSPECTION_TIMEOUT_SECONDS = 45.0
+RELATED_DIALOG_DETAILS_TIMEOUT_SECONDS = 3.0
+RELATED_DIALOG_INSPECTION_TIMEOUT_SECONDS = 12.0
 SCREENSHOT_TIMEOUT_SECONDS = 20.0
 
 
@@ -201,6 +210,44 @@ def _matches_u8_related_dialog(record: dict[str, Any]) -> bool:
     """Capture a U8 lookup dialog only after a genuine U8 root was found."""
     title = str(record.get("title") or "").casefold()
     return any(word in title for word in U8_RELATED_DIALOG_WORDS)
+
+
+def _is_legacy_dialog_candidate(record: dict[str, Any]) -> bool:
+    """Return True for the untitled VB6 forms used by U8 reference lookups.
+
+    This is deliberately only a *candidate* check.  It is considered only
+    after the current U8 special-invoice form was observed disabled, then a
+    bounded detailed read verifies that it is a visible, usable dialog.
+    """
+    return str(record.get("class_name") or "").casefold() in LEGACY_DIALOG_CLASSES
+
+
+def _is_visible_legacy_dialog(record: dict[str, Any]) -> bool:
+    rectangle = record.get("rectangle")
+    if not (record.get("visible") is True and record.get("enabled") is True
+            and isinstance(rectangle, dict)):
+        return False
+    try:
+        return (int(rectangle["right"]) - int(rectangle["left"]) >= 200
+                and int(rectangle["bottom"]) - int(rectangle["top"]) >= 120)
+    except (KeyError, TypeError, ValueError):
+        return False
+
+
+def _special_invoice_lookup_is_open(result: BackendResult) -> bool:
+    """Detect the observed modal state without assuming a popup caption.
+
+    In the lab evidence the ``采购供应商档案`` popup is a blank-caption VB6
+    window.  The dependable state signal is instead that its parent
+    ``专用发票`` form is visible but disabled.
+    """
+    for window in result.windows:
+        for control in window.get("controls", []):
+            if (control.get("visible") is True and control.get("enabled") is False
+                    and str(control.get("class_name") or "").casefold() == "thunderrt6formdc"
+                    and "专用发票" in str(control.get("title") or "")):
+                return True
+    return False
 
 
 def _is_interactive(record: dict[str, Any]) -> bool:
@@ -399,6 +446,37 @@ def _inspect_window(backend: str, window: Any, index: int, errors: ErrorRecorder
             [record for record in controls if _is_interactive(record)], dialogs, identifiers.getvalue())
 
 
+def _append_window_inspection(result: BackendResult, backend: str, window: Any,
+                              index: int, errors: ErrorRecorder, sections: list[str],
+                              timeout_seconds: float, description: str) -> bool:
+    """Inspect one already-selected window, preserving all earlier evidence on failure."""
+    try:
+        inspected = _bounded_call(
+            None, errors, f"{backend}.{description}_{index}.inspection",
+            lambda: _inspect_window(backend, window, index, errors), timeout_seconds,
+        )
+        if inspected is None:
+            sections.append(f"\n=== {description.title()} {index} timed out and was skipped ===\n")
+            return False
+        structured, hierarchy, interactive, dialogs, identifiers = inspected
+        result.windows.append(structured)
+        result.hierarchy.extend(hierarchy)
+        result.interactive_controls.extend({"backend": backend, **record} for record in interactive)
+        # Hidden historical U8 windows produced confusing cropped
+        # ``u8_dialog_01`` images in the first reports.  Keep screenshot names
+        # meaningful by queueing only windows that are visible at capture time.
+        if structured["window"].get("visible") is True:
+            result.screenshot_roots.append(window)
+        result.screenshot_roots.extend(dialogs)
+        title = structured["window"].get("title") or "(untitled window)"
+        sections.append(f"\n=== {description.title()} {index}: {title} ===\n{identifiers}")
+        return True
+    except Exception as exc:
+        errors.record(f"{backend}.{description}_{index}", exc)
+        sections.append(f"\n=== {description.title()} {index} failed ===\n{type(exc).__name__}: {exc}\n")
+        return False
+
+
 def inspect_backend(backend: str, errors: ErrorRecorder) -> BackendResult:
     try:
         from pywinauto import Desktop
@@ -441,25 +519,42 @@ def inspect_backend(backend: str, errors: ErrorRecorder) -> BackendResult:
         result.identifiers = "未找到标题含 U8、用友或企业应用平台的窗口。\n"
         return result
     sections: list[str] = []
+    inspected_handles: set[int] = set()
     for index, (window, _candidate) in enumerate(matches, 1):
-        try:
-            inspected = _bounded_call(
-                None, errors, f"{backend}.matching_window_{index}.inspection",
-                lambda window=window, index=index: _inspect_window(backend, window, index, errors),
-                BACKEND_WINDOW_INSPECTION_TIMEOUT_SECONDS,
-            )
-            if inspected is None:
-                sections.append(f"\n=== Matching window {index} timed out and was skipped ===\n")
+        _append_window_inspection(
+            result, backend, window, index, errors, sections,
+            BACKEND_WINDOW_INSPECTION_TIMEOUT_SECONDS, "matching window",
+        )
+        handle = _candidate.get("handle")
+        if isinstance(handle, int):
+            inspected_handles.add(handle)
+
+    # The supplier-reference form seen in the lab screenshots has no title,
+    # so a title-only Desktop.windows() filter cannot find it.  Only when the
+    # main special-invoice form is disabled (a modal lookup is open) do we
+    # examine bounded VB6-form candidates.  This avoids broad desktop scans.
+    if _special_invoice_lookup_is_open(result):
+        dialog_index = len(matches)
+        for window, candidate in candidates:
+            candidate_handle = candidate.get("handle")
+            if (not _is_legacy_dialog_candidate(candidate)
+                    or (isinstance(candidate_handle, int) and candidate_handle in inspected_handles)):
                 continue
-            structured, hierarchy, interactive, dialogs, identifiers = inspected
-            result.windows.append(structured)
-            result.hierarchy.extend(hierarchy)
-            result.interactive_controls.extend({"backend": backend, **record} for record in interactive)
-            result.screenshot_roots.extend([window, *dialogs])
-            sections.append(f"\n=== Matching window {index}: {structured['window']['title']} ===\n{identifiers}")
-        except Exception as exc:
-            errors.record(f"{backend}.matching_window_{index}", exc)
-            sections.append(f"\n=== Matching window {index} failed ===\n{type(exc).__name__}: {exc}\n")
+            detail = _bounded_call(
+                None, errors, f"{backend}.legacy_dialog_candidate_{dialog_index + 1}.details",
+                lambda window=window, dialog_index=dialog_index: _window_record(
+                    window, errors, f"{backend}.legacy_dialog_candidate_{dialog_index + 1}"),
+                RELATED_DIALOG_DETAILS_TIMEOUT_SECONDS,
+            )
+            if detail is None or not _is_visible_legacy_dialog(detail):
+                continue
+            dialog_index += 1
+            _append_window_inspection(
+                result, backend, window, dialog_index, errors, sections,
+                RELATED_DIALOG_INSPECTION_TIMEOUT_SECONDS, "related legacy dialog",
+            )
+            if isinstance(candidate_handle, int):
+                inspected_handles.add(candidate_handle)
     result.identifiers = "".join(sections)
     return result
 

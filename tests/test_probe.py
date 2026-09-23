@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 from src.u8.diagnostic_bundle import create_diagnostic_zip
 from src.u8.probe import (BackendResult, ErrorRecorder, _control_stats, _create_output_dir,
-                          _bounded_call, _json_safe, _matches_u8, _safe_label, _window_record, list_top_windows, run_probe,
+                          _bounded_call, _json_safe, _matches_u8, _safe_label, _window_record, inspect_backend, list_top_windows, run_probe,
                           write_summary)
 
 
@@ -56,6 +56,40 @@ class WindowWithDeniedElement(FakeWindow):
         return DeniedElement()
 
 
+class FakeTreeWindow(FakeWindow):
+    def __init__(self, title: str, handle: int, class_name: str,
+                 visible: bool = True, enabled: bool = True,
+                 descendants: list["FakeTreeWindow"] | None = None) -> None:
+        super().__init__(title=title)
+        self._handle = handle
+        self._class_name = class_name
+        self._visible = visible
+        self._enabled = enabled
+        self._descendants = descendants or []
+
+    @property
+    def handle(self) -> int:
+        return self._handle
+
+    def class_name(self) -> str:
+        return self._class_name
+
+    def rectangle(self) -> object:
+        return type("Rect", (), {"left": 100, "top": 100, "right": 800, "bottom": 600})()
+
+    def is_visible(self) -> bool:
+        return self._visible
+
+    def is_enabled(self) -> bool:
+        return self._enabled
+
+    def descendants(self) -> list["FakeTreeWindow"]:
+        return self._descendants
+
+    def parent(self) -> None:
+        return None
+
+
 class ProbeReportTests(unittest.TestCase):
     def test_invalid_win32_title_surrogate_is_replaced_before_json_output(self) -> None:
         self.assertEqual(_json_safe({"title": "bad\ud991title"})["title"], "bad?title")
@@ -96,6 +130,36 @@ class ProbeReportTests(unittest.TestCase):
         self.assertEqual(len(records), 20)
         self.assertEqual(records[4]["handle"], 123)
         self.assertTrue(any("handle" in message for message in errors.messages))
+
+    def test_untitled_supplier_lookup_is_captured_only_when_invoice_form_is_disabled(self) -> None:
+        disabled_invoice_form = FakeTreeWindow("专用发票", 101, "ThunderRT6FormDC", enabled=False)
+        u8_main = FakeTreeWindow("新道 U8", 100, "WindowsForms10.Window.8.app.0.378734a",
+                                 descendants=[disabled_invoice_form])
+        lookup_dialog = FakeTreeWindow("", 200, "ThunderRT6FormDC", descendants=[
+            FakeTreeWindow("供应商名称", 201, "Static"),
+            FakeTreeWindow("", 202, "Edit"),
+            FakeTreeWindow("", 203, "VSFlexGrid8N"),
+            FakeTreeWindow("确定", 204, "Button"),
+        ])
+        module = ModuleType("pywinauto")
+        module.Desktop = lambda backend: type("Desktop", (), {"windows": lambda self: [u8_main, lookup_dialog]})()
+        with tempfile.TemporaryDirectory() as temporary, patch.dict("sys.modules", {"pywinauto": module}):
+            result = inspect_backend("win32", ErrorRecorder(Path(temporary) / "diagnostics_errors.log"))
+        self.assertEqual(len(result.windows), 2)
+        self.assertEqual(result.windows[1]["window"]["title"], "")
+        self.assertIn("Related Legacy Dialog", result.identifiers)
+        self.assertTrue(any(record["control_type"] == "DataGrid" for record in result.interactive_controls))
+
+    def test_untitled_legacy_form_is_not_inspected_without_disabled_invoice_form(self) -> None:
+        active_invoice_form = FakeTreeWindow("专用发票", 101, "ThunderRT6FormDC", enabled=True)
+        u8_main = FakeTreeWindow("新道 U8", 100, "WindowsForms10.Window.8.app.0.378734a",
+                                 descendants=[active_invoice_form])
+        unrelated_form = FakeTreeWindow("", 200, "ThunderRT6FormDC")
+        module = ModuleType("pywinauto")
+        module.Desktop = lambda backend: type("Desktop", (), {"windows": lambda self: [u8_main, unrelated_form]})()
+        with tempfile.TemporaryDirectory() as temporary, patch.dict("sys.modules", {"pywinauto": module}):
+            result = inspect_backend("win32", ErrorRecorder(Path(temporary) / "diagnostics_errors.log"))
+        self.assertEqual(len(result.windows), 1)
 
     def test_label_is_safe_for_a_diagnostics_directory(self) -> None:
         self.assertEqual(_safe_label("purchase/order popup"), "purchase_order_popup")

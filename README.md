@@ -60,6 +60,8 @@ PDF outline 页码是 **从 1 开始** 的；PyMuPDF 的 `load_page()` 是 **从
 
 Windows 桌面上的无关窗口可能拒绝访问或在枚举中瞬间关闭。probe 会逐字段读取窗口信息；AccessDenied、无效 handle、UIA、截图或个别控件失败都只写入 `diagnostics_errors.log`，不会中止已有报告。找到 U8 后，仍会生成 ZIP，并提示“诊断完成，部分系统窗口无法读取，已记录。”
 
+在“专用发票”页面打开供应商或存货参照时，U8 会使用可能没有窗口标题的传统 VB6 弹窗。probe 发现专用发票主窗体被禁用后，才会额外、限时检查可见的关联 `ThunderRT6FormDC` 窗体；其控件树、交互控件及截图会分别写入现有诊断文件。隐藏的历史窗口不会占用 `u8_dialog_01.png` 等截图编号。
+
 ### 开发者：构建 Windows 7 x86 EXE（机房发布版本）
 
 本开发机是 macOS，不能直接生成可用的 Windows EXE。Win7 x86 发布版必须在 Windows 上使用 **32 位 Python 3.8.x** 构建。开发机安装 Python 3.8 x86 后执行：
