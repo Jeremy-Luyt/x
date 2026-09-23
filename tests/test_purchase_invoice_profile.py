@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 
 from src.u8.purchase_invoice_profile import (FORBIDDEN_ACTIONS, PROTECTED_FIELDS,
-                                              resolve_special_purchase_invoice)
+                                              InvoicePageState, resolve_special_purchase_invoice)
 
 
 def control(title: str, class_name: str, left: int, top: int, right: int, bottom: int,
@@ -27,6 +27,7 @@ class PurchaseInvoiceProfileTests(unittest.TestCase):
         result = resolve_special_purchase_invoice(snapshot)
         self.assertTrue(result.page_detected)
         self.assertTrue(result.form_active)
+        self.assertEqual(result.state, InvoicePageState.FORM_READY_FOR_REVIEW)
         self.assertEqual(result.fields["invoice_date"].observed_handle, 134190)
         self.assertEqual(result.fields["supplier"].observed_handle, 199704)
         self.assertIn("system_invoice_number", result.unresolved_fields)
@@ -40,6 +41,7 @@ class PurchaseInvoiceProfileTests(unittest.TestCase):
         result = resolve_special_purchase_invoice(snapshot)
         self.assertTrue(result.modal_dialog_open)
         self.assertFalse(result.form_active)
+        self.assertEqual(result.state, InvoicePageState.SUPPLIER_LOOKUP_OPEN)
 
     def test_protected_financial_actions_remain_forbidden(self) -> None:
         self.assertIn("system_invoice_number", PROTECTED_FIELDS)

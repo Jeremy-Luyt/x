@@ -8,6 +8,7 @@ window handles or fixed screen coordinates as selectors.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 from typing import Any, Iterable
 
 
@@ -16,6 +17,14 @@ PAGE_TITLE_MARKER = "专用采购发票"
 GRID_CLASS = "VSFlexGrid8N"
 PROTECTED_FIELDS = frozenset({"system_invoice_number"})
 FORBIDDEN_ACTIONS = frozenset({"save", "audit", "post", "close_period"})
+
+
+class InvoicePageState(str, Enum):
+    """Observed page state; only runtime evidence may advance a write step."""
+
+    NOT_SPECIAL_INVOICE = "not_special_invoice"
+    SUPPLIER_LOOKUP_OPEN = "supplier_lookup_open"
+    FORM_READY_FOR_REVIEW = "form_ready_for_review"
 
 
 @dataclass(frozen=True)
@@ -41,6 +50,7 @@ class ResolvedField:
 @dataclass(frozen=True)
 class PageResolution:
     profile_id: str
+    state: InvoicePageState
     page_detected: bool
     form_active: bool
     modal_dialog_open: bool
@@ -158,6 +168,9 @@ def resolve_special_purchase_invoice(controls: Iterable[dict[str, Any]]) -> Page
         )
     return PageResolution(
         profile_id=PROFILE_ID,
+        state=(InvoicePageState.NOT_SPECIAL_INVOICE if not page_detected else
+               InvoicePageState.SUPPLIER_LOOKUP_OPEN if modal_dialog_open else
+               InvoicePageState.FORM_READY_FOR_REVIEW),
         page_detected=page_detected,
         form_active=page_detected and not modal_dialog_open,
         modal_dialog_open=modal_dialog_open,
