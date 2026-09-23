@@ -1,4 +1,4 @@
-# Build this spec on Windows only. PyInstaller does not cross-compile Windows EXEs from macOS.
+# Build only with 32-bit Python 3.8 on Windows.  The tool remains read-only.
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
 
 
@@ -47,12 +47,10 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name="U8诊断工具-Win10-x64",
+    name="U8诊断工具-Win7-x86",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
     console=False,
 )
-# No COLLECT block is intentional: EXE receives all binaries and data, producing
-# PyInstaller's one-file executable. console=False makes it a windowed application.

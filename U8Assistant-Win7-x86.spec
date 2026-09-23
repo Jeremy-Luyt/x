@@ -1,4 +1,4 @@
-# Build this spec on Windows only. It makes a one-file, windowed Win10/11 x64 build.
+# Build only with 32-bit Python 3.8 on Windows.  PyInstaller cannot cross-compile.
 from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
@@ -36,7 +36,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name="U8Assistant-Win10-x64",
+    name="U8Assistant-Win7-x86",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

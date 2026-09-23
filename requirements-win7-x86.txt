@@ -1,0 +1,11 @@
+# Locked Windows 7 x86 build baseline.  CI installs binary distributions only;
+# it must never silently fall back to compiling a dependency on the runner.
+--only-binary=:all:
+
+# Python 3.8 + 32-bit Windows compatible releases.
+PyMuPDF==1.24.11
+Pillow==10.4.0
+pywinauto==0.6.9
+pywin32==306
+comtypes==1.4.8
+PyInstaller==5.13.2

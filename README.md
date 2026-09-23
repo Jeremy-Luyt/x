@@ -2,6 +2,8 @@
 
 用于学校“业财税一体化”实验的 Windows 桌面辅助工具。第一阶段只完成 PDF 任务阅读、惰性页面渲染、Mock 自动化边界和机房诊断；它**不会**猜测用友 U8 控件、点击固定坐标、自动保存、记账、审核或结账。
 
+学校机房的发布目标是 **Windows 7 32 位（x86）**：只使用 GitHub Actions 产物 `U8Assistant-Win7-x86.exe` 和 `U8诊断工具-Win7-x86.exe`。普通使用者不需要安装 Python、pip 或打开命令行。
+
 ## 当前能力
 
 - 使用 PyMuPDF 的 `doc.get_toc()` 读取原生 PDF bookmarks，不对整份 PDF OCR。
@@ -16,7 +18,7 @@
 
 ## 安装与启动
 
-目标运行环境为 **Windows + Python 3.11+**。创建虚拟环境后安装依赖：
+本地开发环境建议使用 **Python 3.11+**。创建虚拟环境后安装依赖：
 
 ```powershell
 cd u8-assistant
@@ -56,28 +58,38 @@ PDF outline 页码是 **从 1 开始** 的；PyMuPDF 的 `load_page()` 是 **从
 
 工具只读取窗口和控件信息，绝不会点击、输入、保存或修改 U8。成功后会在桌面自动生成 `U8诊断结果_YYYYMMDD_HHMMSS.zip`，界面提供“打开文件位置”。如果没找到 U8，界面会提示先确认 U8 窗口保持打开；若可能是权限不一致，则提示关闭工具后右键“以管理员身份运行”。不会向普通使用者显示 traceback、Python、backend 或 JSON 术语。
 
-### 开发者：Windows 上构建一次 EXE
+### 开发者：构建 Windows 7 x86 EXE（机房发布版本）
 
-本开发机是 macOS，不能直接生成可用的 Windows EXE。将项目放到 Windows 且已安装 Python 3.11+ 的开发机后，唯一需要执行的步骤是：
+本开发机是 macOS，不能直接生成可用的 Windows EXE。Win7 x86 发布版必须在 Windows 上使用 **32 位 Python 3.8.x** 构建。开发机安装 Python 3.8 x86 后执行：
 
 ```powershell
-build_windows.bat
+build_win7_x86.bat
 ```
 
-脚本会安装构建依赖并生成 `dist/U8诊断工具.exe` 和 `dist/U8Assistant.exe`。之后把 EXE 交给普通使用者即可；他们的电脑不需要 Python、pip 或命令行。
+脚本先打印 Python 版本、`platform.architecture()` 与指针位数；若位数不是 **32** 会直接停止。它只接受锁定依赖的二进制发行包，绝不因安装失败临时编译源码。成功后生成：
 
-`U8诊断工具.spec` 配置了 PyInstaller one-file/windowed 构建，并纳入 pywinauto、comtypes、Pillow 与 pywin32 所需的 hidden imports。请在目标 Windows 版本上实际启动一次 EXE 后再分发。
+- `dist/U8Assistant-Win7-x86.exe`（机房使用）
+- `dist/U8诊断工具-Win7-x86.exe`（机房诊断使用）
+
+依赖锁定文件为 `requirements-win7-x86.txt`：Python 3.8 x86 下使用 `PyMuPDF==1.24.11`、`Pillow==10.4.0`、`pywinauto==0.6.9`、`pywin32==306`、`comtypes==1.4.8`、`PyInstaller==5.13.2`。之后把 EXE 交给普通使用者即可；他们的电脑不需要 Python、pip 或命令行。
+
+`U8Assistant-Win7-x86.spec` 和 `U8诊断工具-Win7-x86.spec` 都是 PyInstaller one-file/windowed 构建，不显示控制台黑框；Python runtime 和同一 x86 环境产生的 DLL 会随 EXE 一起打包。`U8诊断工具-Win7-x86.spec` 纳入 pywinauto、comtypes、Pillow 与 pywin32 所需的 hidden imports。
+
+`build_windows.bat` 仍保留给 Windows 10/11 x64 开发版本，输出名称明确为 `U8Assistant-Win10-x64.exe` 与 `U8诊断工具-Win10-x64.exe`，不要带到学校 Win7 x86 机房。
 
 ### 开发者：由 GitHub Actions 自动构建（推荐）
 
 macOS 不可交叉编译 Windows EXE，因此项目已包含 `.github/workflows/build-windows-exe.yml`。将项目提交到 GitHub 后：
 
-1. 推送任意分支，或在 GitHub 的 **Actions** 页面手动运行 **Build U8 Diagnostics Windows EXE**。
-2. GitHub 的 Windows 虚拟机会安装 Python 3.11 依赖、运行单元测试，并执行 PyInstaller。
-3. 在该运行记录底部的 **Artifacts** 下载 `U8Assistant-windows`。
-4. 解压下载内容，得到 `U8诊断工具.exe` 和 `U8Assistant.exe`；将它们复制到机房电脑后即可双击运行。
+1. 推送任意分支，或在 GitHub 的 **Actions** 页面手动运行 **Build U8Assistant Windows executables**。
+2. `Package Windows 7 x86 (Python 3.8 x86)` job 明确使用 `actions/setup-python@v5` 的 `python-version: '3.8'` 与 `architecture: 'x86'`，打印运行时信息，并在指针位数不是 `32` 时失败。
+3. 该 job 安装 `requirements-win7-x86.txt`、运行单元测试，并以 32 位 PyInstaller 生成 EXE。
+4. 在运行记录底部下载 artifact **`U8Assistant-Win7-x86`**，其中包含 `U8Assistant-Win7-x86.exe` 和 `U8诊断工具-Win7-x86.exe`。只把这两个 x86 文件复制到学校电脑。
+5. `U8Assistant-Win10-x64` 是额外的 Windows 10/11 x64 artifact，不适用于学校 Win7 32 位电脑。
 
-这个 workflow 使用 GitHub 托管的 Windows 环境，不会在 macOS 上假装生成可用的 EXE。它与本地 `build_windows.bat` 产出相同的两个 EXE。
+这个 workflow 只能证明 x86 Python、锁定依赖和 PyInstaller 打包成功；GitHub 运行器不是 Windows 7。**最终仍必须在学校的 Windows 7 32 位电脑上双击启动一次 `U8Assistant-Win7-x86.exe` 和 `U8诊断工具-Win7-x86.exe`，确认 GUI、PDF 查看、U8 主窗口查找和 ZIP 导出。**
+
+两个 EXE 在 GUI 初始化前立即创建 `%LOCALAPPDATA%\\U8Assistant\\startup.log` 或 `%LOCALAPPDATA%\\U8诊断工具\\startup.log`。日志记录操作系统、架构、内置 Python 版本、EXE 路径和启动阶段；若 GUI 初始化失败，完整异常会记录到该文件，但普通用户界面不会显示 traceback。
 
 ## U8Assistant 人工辅助模式
 
@@ -140,8 +152,12 @@ python -m src.u8.probe --label supplier_popup --backend uia
 u8-assistant/
 ├── diagnostic_main.py          # U8诊断工具.exe 的 GUI 入口
 ├── build_windows.bat           # Windows 开发者唯一构建步骤
+├── build_win7_x86.bat           # 学校 Win7 x86 发布构建
+├── requirements-win7-x86.txt    # Python 3.8 / x86 的锁定二进制依赖
 ├── U8诊断工具.spec              # PyInstaller one-file/windowed 配置
 ├── U8Assistant.spec             # 人工辅助 EXE 配置
+├── U8Assistant-Win7-x86.spec    # 学校 Win7 x86 的 one-file/windowed 配置
+├── U8诊断工具-Win7-x86.spec     # 学校诊断工具的 x86 配置
 ├── assets/                      # 获授权后可放入待内置 PDF
 ├── src/
 │   ├── gui/diagnostic_window.py

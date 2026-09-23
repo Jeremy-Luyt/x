@@ -2,16 +2,11 @@
 
 from __future__ import annotations
 
-import argparse
-import json
 import os
 import sys
 from pathlib import Path
 
-from src.gui.main_window import MainWindow
-from src.pdf.task_parser import parse_pdf
-from src.tasks.repository import load_tasks, save_tasks
-from src.utils.logging import configure_logging
+from src.utils.startup import configure_startup_logging
 
 
 RESOURCE_ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
@@ -59,13 +54,25 @@ def locate_pdf(argument: str | None) -> Path:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="U8Assistant - 业财税实验辅助工具")
-    parser.add_argument("--pdf", help="业财税 PDF 的路径")
-    parser.add_argument("--no-gui", action="store_true", help="仅解析 PDF 并生成 data/tasks.json")
-    args = parser.parse_args()
-    writable_root = _writable_root()
-    logger = configure_logging(writable_root)
+    # This is deliberately the first operation: a broken GUI/import still leaves
+    # support evidence in startup.log rather than a hidden windowed traceback.
+    startup_logger = configure_startup_logging("U8Assistant")
     try:
+        startup_logger.info("stage: importing application modules")
+        import argparse
+        import json
+
+        from src.gui.main_window import MainWindow
+        from src.pdf.task_parser import parse_pdf
+        from src.tasks.repository import load_tasks, save_tasks
+        from src.utils.logging import configure_logging
+
+        parser = argparse.ArgumentParser(description="U8Assistant - 业财税实验辅助工具")
+        parser.add_argument("--pdf", help="业财税 PDF 的路径")
+        parser.add_argument("--no-gui", action="store_true", help="仅解析 PDF 并生成 data/tasks.json")
+        args = parser.parse_args()
+        writable_root = _writable_root()
+        logger = configure_logging(writable_root)
         try:
             pdf_path = locate_pdf(args.pdf)
         except FileNotFoundError:
@@ -82,14 +89,23 @@ def main() -> int:
         warning_count = sum(len(task.warnings) for task in tasks)
         print(f"已加载 {len(tasks)} 个任务（{warning_count} 条解析警告）。")
         if args.no_gui:
+            startup_logger.info("stage: command-line validation complete")
             return 0
+        startup_logger.info("stage: initializing Tkinter GUI")
         import tkinter as tk
         root = tk.Tk()
         MainWindow(root, tasks, pdf_path, writable_root, logger)
+        startup_logger.info("stage: GUI ready")
         root.mainloop()
         return 0
     except Exception as exc:
-        logger.exception("Application startup failed")
+        startup_logger.exception("Application startup failed")
+        try:
+            from tkinter import messagebox
+            messagebox.showerror("U8Assistant", "程序暂时无法启动。请联系老师或技术人员，并提供 startup.log。")
+        except Exception:
+            # A console is intentionally absent in the packaged program.
+            pass
         print(f"启动失败：{exc}", file=sys.stderr)
         return 1
 

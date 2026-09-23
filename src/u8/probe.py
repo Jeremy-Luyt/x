@@ -174,9 +174,31 @@ def _dpi_scaling(errors: ErrorRecorder) -> dict[str, Any]:
         return {"available": False, "reason": "not_windows"}
     try:
         user32 = ctypes.windll.user32
-        user32.SetProcessDPIAware()
-        dpi = user32.GetDpiForSystem()
-        return {"available": True, "dpi": dpi, "scale_percent": round(dpi / 96 * 100)}
+        # SetProcessDPIAware is present on Windows 7; newer GetDpiForSystem is
+        # not.  Each optional call is guarded so the report still completes.
+        set_aware = getattr(user32, "SetProcessDPIAware", None)
+        if set_aware is not None:
+            set_aware()
+        get_dpi_for_system = getattr(user32, "GetDpiForSystem", None)
+        if get_dpi_for_system is not None:
+            dpi = get_dpi_for_system()
+            method = "GetDpiForSystem"
+        else:
+            hdc = user32.GetDC(None)
+            if not hdc:
+                raise OSError("GetDC failed while reading DPI")
+            try:
+                # LOGPIXELSX (88) is available on Windows 7 through gdi32.
+                dpi = ctypes.windll.gdi32.GetDeviceCaps(hdc, 88)
+            finally:
+                user32.ReleaseDC(None, hdc)
+            method = "GetDeviceCaps"
+        return {
+            "available": True,
+            "dpi": dpi,
+            "scale_percent": round(dpi / 96 * 100),
+            "method": method,
+        }
     except Exception as exc:  # pragma: no cover - Windows variants
         errors.record("dpi_scaling", exc)
         return {"available": False, "error": str(exc)}

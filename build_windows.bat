@@ -12,16 +12,16 @@ if errorlevel 1 exit /b 1
 py -3.11 -m pip install -r requirements.txt pyinstaller pywin32 comtypes
 if errorlevel 1 exit /b 1
 
-echo Building U8 diagnostics executable...
+echo Building Windows 10/11 x64 U8 diagnostics executable...
 py -3.11 -m PyInstaller --noconfirm --clean "U8诊断工具.spec"
 if errorlevel 1 exit /b 1
 
-echo Building U8Assistant manual-assistance executable...
+echo Building Windows 10/11 x64 U8Assistant manual-assistance executable...
 py -3.11 -m PyInstaller --noconfirm --clean "U8Assistant.spec"
 if errorlevel 1 exit /b 1
 
 echo.
 echo Build complete:
-echo   dist\U8诊断工具.exe
-echo   dist\U8Assistant.exe
+echo   dist\U8诊断工具-Win10-x64.exe
+echo   dist\U8Assistant-Win10-x64.exe
 endlocal

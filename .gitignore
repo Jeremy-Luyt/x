@@ -10,6 +10,7 @@ __pycache__/
 *.py[cod]
 build/
 dist/
+outputs/
 *.spec.bak
 
 # Personal PDF/configuration locations are not shared.
