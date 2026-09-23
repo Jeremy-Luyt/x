@@ -24,6 +24,7 @@ from typing import Any, Callable, Iterable, Literal
 
 
 U8_WORDS = ("u8", "用友", "企业应用平台", "新道")
+U8_RELATED_DIALOG_WORDS = ("供应商", "存货", "参照")
 # The probe's own title deliberately contains U8 so ordinary users know what it
 # is for.  It is never evidence of a running U8 business application.
 PROBE_WINDOW_TITLE_MARKERS = ("环境诊断工具",)
@@ -194,6 +195,12 @@ def _matches_u8(record: dict[str, Any]) -> bool:
     title = str(record.get("title") or "").casefold()
     return (not any(marker in title for marker in PROBE_WINDOW_TITLE_MARKERS)
             and any(word in title for word in U8_WORDS))
+
+
+def _matches_u8_related_dialog(record: dict[str, Any]) -> bool:
+    """Capture a U8 lookup dialog only after a genuine U8 root was found."""
+    title = str(record.get("title") or "").casefold()
+    return any(word in title for word in U8_RELATED_DIALOG_WORDS)
 
 
 def _is_interactive(record: dict[str, Any]) -> bool:
@@ -406,7 +413,7 @@ def inspect_backend(backend: str, errors: ErrorRecorder) -> BackendResult:
         message = f"{backend} backend 未返回窗口（超时或不可用），已跳过。\n"
         return BackendResult(backend, "failed", message, error="desktop enumeration timed out or returned no windows")
     result = BackendResult(backend, "success", "")
-    matches = []
+    candidates: list[tuple[Any, dict[str, Any]]] = []
     deadline = time.monotonic() + TOP_WINDOW_DISCOVERY_TIMEOUT_SECONDS
     for index, window in enumerate(windows, 1):
         try:
@@ -420,15 +427,21 @@ def inspect_backend(backend: str, errors: ErrorRecorder) -> BackendResult:
                 lambda window=window, index=index: _candidate_record(window, errors, f"{backend}.candidate_{index}"),
                 min(TOP_WINDOW_RECORD_TIMEOUT_SECONDS, remaining),
             )
-            if candidate is not None and _matches_u8(candidate):
-                matches.append(window)
+            if candidate is not None:
+                candidates.append((window, candidate))
         except Exception as exc:
             errors.record(f"{backend}.candidate_{index}.skip", exc)
+    roots = [(window, record) for window, record in candidates if _matches_u8(record)]
+    # The initial reports captured supplier lookups visually but did not add a
+    # separate control tree because their title does not contain U8.  Once a
+    # genuine U8 root exists, collect only relevant lookup dialogs as well.
+    matches = roots + [(window, record) for window, record in candidates
+                       if _matches_u8_related_dialog(record) and not _matches_u8(record)] if roots else roots
     if not matches:
         result.identifiers = "未找到标题含 U8、用友或企业应用平台的窗口。\n"
         return result
     sections: list[str] = []
-    for index, window in enumerate(matches, 1):
+    for index, (window, _candidate) in enumerate(matches, 1):
         try:
             inspected = _bounded_call(
                 None, errors, f"{backend}.matching_window_{index}.inspection",
