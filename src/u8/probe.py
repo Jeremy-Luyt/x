@@ -14,6 +14,8 @@ import json
 import platform
 import re
 import sys
+import threading
+import time
 from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -34,6 +36,16 @@ CLASS_TO_CONTROL_TYPE = {
     "syslistview32": "List", "listbox": "List", "menuitem": "MenuItem",
     "systabcontrol32": "TabItem",
 }
+
+# Desktop enumeration occasionally includes a protected or hung application on
+# old lab machines.  Win32 calls against that process can block rather than
+# raise, so normal try/except alone is not enough.  These limits only apply to
+# discovery; a timed-out call is recorded and the report continues.
+TOP_WINDOW_ENUM_TIMEOUT_SECONDS = 12.0
+TOP_WINDOW_RECORD_TIMEOUT_SECONDS = 2.0
+TOP_WINDOW_DISCOVERY_TIMEOUT_SECONDS = 30.0
+BACKEND_WINDOW_INSPECTION_TIMEOUT_SECONDS = 45.0
+SCREENSHOT_TIMEOUT_SECONDS = 20.0
 
 
 @dataclass
@@ -96,6 +108,35 @@ def _safe_call(default: Any, errors: ErrorRecorder, context: str, callback: Any)
     except Exception as exc:
         errors.record(context, exc)
         return default
+
+
+def _bounded_call(default: Any, errors: ErrorRecorder, context: str,
+                  callback: Callable[[], Any], timeout_seconds: float) -> Any:
+    """Run a potentially blocking Win32 query without holding the probe forever.
+
+    Python cannot safely terminate a thread in a native Windows call.  The
+    worker is therefore daemon-only: on timeout the probe keeps going and the
+    process can still exit normally once the report is saved.
+    """
+    completed = threading.Event()
+    result: dict[str, Any] = {"value": default}
+
+    def invoke() -> None:
+        try:
+            result["value"] = callback()
+        except Exception as exc:
+            result["exception"] = exc
+        finally:
+            completed.set()
+
+    threading.Thread(target=invoke, daemon=True, name="u8-probe-window-read").start()
+    if not completed.wait(timeout_seconds):
+        errors.record(context, TimeoutError(f"Windows 查询超过 {timeout_seconds:.0f} 秒，已跳过"))
+        return default
+    if "exception" in result:
+        errors.record(context, result["exception"])
+        return default
+    return result["value"]
 
 
 def _rectangle(window: Any, errors: ErrorRecorder, context: str) -> dict[str, int] | None:
@@ -267,14 +308,45 @@ def environment_snapshot(errors: ErrorRecorder) -> dict[str, Any]:
 def list_top_windows(errors: ErrorRecorder) -> tuple[list[dict[str, Any]], str | None]:
     try:
         from pywinauto import Desktop
-        windows = Desktop(backend="win32").windows()
     except Exception as exc:
         errors.record("top_level_windows", exc)
         return [], f"无法列举顶层窗口：{type(exc).__name__}: {exc}"
+    windows = _bounded_call(
+        [], errors, "top_level_windows.enumeration",
+        lambda: Desktop(backend="win32").windows(), TOP_WINDOW_ENUM_TIMEOUT_SECONDS,
+    )
+    if not windows:
+        return [], "顶层窗口列举超时或不可用；已跳过无响应的系统窗口。"
     records: list[dict[str, Any]] = []
+    deadline = time.monotonic() + TOP_WINDOW_DISCOVERY_TIMEOUT_SECONDS
     for index, window in enumerate(windows, 1):
         try:
-            records.append(_window_record(window, errors, f"top_window_{index}"))
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                errors.record("top_level_windows.discovery", TimeoutError(
+                    f"顶层窗口筛选超过 {TOP_WINDOW_DISCOVERY_TIMEOUT_SECONDS:.0f} 秒，已停止继续读取"))
+                break
+            # Do not request element_info, visibility or rectangles for every
+            # unrelated desktop window.  Those remote reads are both slow and
+            # the source of AccessDenied/hangs seen on Windows 7.
+            candidate = _bounded_call(
+                None, errors, f"top_window_{index}.candidate",
+                lambda window=window, index=index: _candidate_record(window, errors, f"top_window_{index}"),
+                min(TOP_WINDOW_RECORD_TIMEOUT_SECONDS, remaining),
+            )
+            if candidate is None:
+                continue
+            if _matches_u8(candidate):
+                # Only suspected U8 windows need detailed metadata for the
+                # report.  Give each one its own short bound as well.
+                detailed = _bounded_call(
+                    None, errors, f"top_window_{index}.details",
+                    lambda window=window, index=index: _window_record(window, errors, f"top_window_{index}"),
+                    min(TOP_WINDOW_RECORD_TIMEOUT_SECONDS, max(0.1, deadline - time.monotonic())),
+                )
+                records.append(detailed if detailed is not None else candidate)
+            else:
+                records.append(candidate)
         except Exception as exc:
             # Handles can disappear between Desktop.windows() and inspection.
             errors.record(f"top_window_{index}.skip", exc)
@@ -312,15 +384,32 @@ def _inspect_window(backend: str, window: Any, index: int, errors: ErrorRecorder
 def inspect_backend(backend: str, errors: ErrorRecorder) -> BackendResult:
     try:
         from pywinauto import Desktop
-        windows = Desktop(backend=backend).windows()
     except Exception as exc:
         errors.record(f"{backend}.desktop", exc)
         return BackendResult(backend, "failed", f"{backend} backend failed but probe continued:\n{type(exc).__name__}: {exc}\n", error=str(exc))
+    windows = _bounded_call(
+        [], errors, f"{backend}.desktop.enumeration",
+        lambda: Desktop(backend=backend).windows(), TOP_WINDOW_ENUM_TIMEOUT_SECONDS,
+    )
+    if not windows:
+        message = f"{backend} backend 未返回窗口（超时或不可用），已跳过。\n"
+        return BackendResult(backend, "failed", message, error="desktop enumeration timed out or returned no windows")
     result = BackendResult(backend, "success", "")
     matches = []
+    deadline = time.monotonic() + TOP_WINDOW_DISCOVERY_TIMEOUT_SECONDS
     for index, window in enumerate(windows, 1):
         try:
-            if _matches_u8(_candidate_record(window, errors, f"{backend}.candidate_{index}")):
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                errors.record(f"{backend}.candidate_discovery", TimeoutError(
+                    f"{backend} 窗口筛选超过 {TOP_WINDOW_DISCOVERY_TIMEOUT_SECONDS:.0f} 秒，已停止继续读取"))
+                break
+            candidate = _bounded_call(
+                None, errors, f"{backend}.candidate_{index}",
+                lambda window=window, index=index: _candidate_record(window, errors, f"{backend}.candidate_{index}"),
+                min(TOP_WINDOW_RECORD_TIMEOUT_SECONDS, remaining),
+            )
+            if candidate is not None and _matches_u8(candidate):
                 matches.append(window)
         except Exception as exc:
             errors.record(f"{backend}.candidate_{index}.skip", exc)
@@ -330,7 +419,15 @@ def inspect_backend(backend: str, errors: ErrorRecorder) -> BackendResult:
     sections: list[str] = []
     for index, window in enumerate(matches, 1):
         try:
-            structured, hierarchy, interactive, dialogs, identifiers = _inspect_window(backend, window, index, errors)
+            inspected = _bounded_call(
+                None, errors, f"{backend}.matching_window_{index}.inspection",
+                lambda window=window, index=index: _inspect_window(backend, window, index, errors),
+                BACKEND_WINDOW_INSPECTION_TIMEOUT_SECONDS,
+            )
+            if inspected is None:
+                sections.append(f"\n=== Matching window {index} timed out and was skipped ===\n")
+                continue
+            structured, hierarchy, interactive, dialogs, identifiers = inspected
             result.windows.append(structured)
             result.hierarchy.extend(hierarchy)
             result.interactive_controls.extend({"backend": backend, **record} for record in interactive)
@@ -478,7 +575,9 @@ def run_probe(output_base: Path | None = None, label: str | None = None,
         _write_json(output_dir / f"u8_{name}.json", result.windows, errors, f"write.{name}.json")
     _write_json(output_dir / "interactive_controls.json", [record for result in results for record in result.interactive_controls], errors, "write.interactive_controls")
     _write_json(output_dir / "window_hierarchy.json", [entry for result in results for entry in result.hierarchy], errors, "write.window_hierarchy")
-    _safe_call(None, errors, "capture_screenshots", lambda: _capture_screenshots(output_dir, results, errors, take_screenshots))
+    _bounded_call(None, errors, "capture_screenshots",
+                  lambda: _capture_screenshots(output_dir, results, errors, take_screenshots),
+                  SCREENSHOT_TIMEOUT_SECONDS)
     _notify(progress, "正在保存诊断结果……")
     _safe_call(None, errors, "write_summary", lambda: write_summary(output_dir, environment, windows, results))
     backend_found = any(result.windows for result in results)

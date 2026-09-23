@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from types import ModuleType
@@ -8,7 +9,7 @@ from unittest.mock import patch
 
 from src.u8.diagnostic_bundle import create_diagnostic_zip
 from src.u8.probe import (BackendResult, ErrorRecorder, _control_stats, _create_output_dir,
-                          _safe_label, _window_record, list_top_windows, run_probe,
+                          _bounded_call, _safe_label, _window_record, list_top_windows, run_probe,
                           write_summary)
 
 
@@ -56,6 +57,17 @@ class WindowWithDeniedElement(FakeWindow):
 
 
 class ProbeReportTests(unittest.TestCase):
+    def test_blocking_window_query_times_out_and_probe_can_continue(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            errors = ErrorRecorder(Path(temporary) / "diagnostics_errors.log")
+            started = time.monotonic()
+            result = _bounded_call(
+                "skipped", errors, "fake.blocking_window", lambda: time.sleep(1), 0.01,
+            )
+        self.assertEqual(result, "skipped")
+        self.assertLess(time.monotonic() - started, 0.5)
+        self.assertTrue(any("blocking_window" in message for message in errors.messages))
+
     def test_denied_element_properties_are_recorded_without_aborting(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             errors = ErrorRecorder(Path(temporary) / "diagnostics_errors.log")
