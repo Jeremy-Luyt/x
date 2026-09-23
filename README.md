@@ -97,6 +97,10 @@ macOS 不可交叉编译 Windows EXE，因此项目已包含 `.github/workflows/
 
 这个 workflow 只能证明 x86 Python、锁定依赖和 PyInstaller 打包成功；GitHub 运行器不是 Windows 7。**最终仍必须在学校的 Windows 7 32 位电脑上双击启动一次 `U8Assistant-Win7-x86.exe` 和 `U8诊断工具-Win7-x86.exe`，确认 GUI、PDF 查看、U8 主窗口查找和 ZIP 导出。**
 
+### 安全下载与代码签名
+
+未签名的 PyInstaller EXE 常被浏览器或学校策略显示为“危险下载”。这不是通过混淆、改扩展名或压缩密码可以安全解决的问题。workflow 会附带 `SHA256SUMS.txt` 和 `SIGNING-STATUS.txt`；若配置 GitHub Actions secrets `WINDOWS_CERTIFICATE_BASE64`（受信任 Authenticode PFX 的 Base64）与 `WINDOWS_CERTIFICATE_PASSWORD`，会在上传前签名并验证两个 EXE。没有受信任证书时产物明确标为 `UNSIGNED`，浏览器拦截可能仍会发生。
+
 两个 EXE 在 GUI 初始化前立即创建 `%LOCALAPPDATA%\\U8Assistant\\startup.log` 或 `%LOCALAPPDATA%\\U8诊断工具\\startup.log`。日志记录操作系统、架构、内置 Python 版本、EXE 路径和启动阶段；若 GUI 初始化失败，完整异常会记录到该文件，但普通用户界面不会显示 traceback。
 
 ## U8Assistant 人工辅助与专用发票半自动模式

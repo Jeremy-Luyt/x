@@ -56,6 +56,36 @@ jobs:
         shell: pwsh
         run: python -m PyInstaller --noconfirm --clean "U8诊断工具-Win7-x86.spec"
 
+      - name: Sign Win7 x86 executables when a trusted certificate is configured
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_CERTIFICATE_BASE64)) {
+            "UNSIGNED: No trusted Authenticode certificate configured." | Set-Content "dist/SIGNING-STATUS.txt" -Encoding utf8
+            exit 0
+          }
+          $certificatePath = Join-Path $env:RUNNER_TEMP "u8assistant-signing.pfx"
+          $certificateBytes = [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_BASE64)
+          [IO.File]::WriteAllBytes($certificatePath, $certificateBytes)
+          $signTool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter signtool.exe | Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
+          if (-not $signTool) { throw "signtool.exe was not found on the Windows runner." }
+          foreach ($file in "dist/U8Assistant-Win7-x86.exe", "dist/U8诊断工具-Win7-x86.exe") {
+            & $signTool sign /fd SHA256 /f $certificatePath /p $env:WINDOWS_CERTIFICATE_PASSWORD /tr http://timestamp.digicert.com /td SHA256 $file
+            if ($LASTEXITCODE -ne 0) { throw "Signing failed: $file" }
+            & $signTool verify /pa /v $file
+            if ($LASTEXITCODE -ne 0) { throw "Signature verification failed: $file" }
+          }
+          "SIGNED: Authenticode verification passed." | Set-Content "dist/SIGNING-STATUS.txt" -Encoding utf8
+
+      - name: Create SHA-256 checksums
+        shell: pwsh
+        run: |
+          Get-FileHash "dist/U8Assistant-Win7-x86.exe", "dist/U8诊断工具-Win7-x86.exe" -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash.ToLower())  $($_.Path | Split-Path -Leaf)" } |
+            Set-Content "dist/SHA256SUMS.txt" -Encoding ascii
+
       - name: Record executable sizes
         shell: pwsh
         run: |
@@ -69,6 +99,8 @@ jobs:
           path: |
             dist/U8Assistant-Win7-x86.exe
             dist/U8诊断工具-Win7-x86.exe
+            dist/SHA256SUMS.txt
+            dist/SIGNING-STATUS.txt
           if-no-files-found: error
           retention-days: 14
 
@@ -104,6 +136,36 @@ jobs:
         shell: pwsh
         run: python -m PyInstaller --noconfirm --clean "U8Assistant.spec"
 
+      - name: Sign Windows x64 executables when a trusted certificate is configured
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE_BASE64: ${{ secrets.WINDOWS_CERTIFICATE_BASE64 }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_CERTIFICATE_BASE64)) {
+            "UNSIGNED: No trusted Authenticode certificate configured." | Set-Content "dist/SIGNING-STATUS.txt" -Encoding utf8
+            exit 0
+          }
+          $certificatePath = Join-Path $env:RUNNER_TEMP "u8assistant-signing.pfx"
+          $certificateBytes = [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE_BASE64)
+          [IO.File]::WriteAllBytes($certificatePath, $certificateBytes)
+          $signTool = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter signtool.exe | Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
+          if (-not $signTool) { throw "signtool.exe was not found on the Windows runner." }
+          foreach ($file in "dist/U8Assistant-Win10-x64.exe", "dist/U8诊断工具-Win10-x64.exe") {
+            & $signTool sign /fd SHA256 /f $certificatePath /p $env:WINDOWS_CERTIFICATE_PASSWORD /tr http://timestamp.digicert.com /td SHA256 $file
+            if ($LASTEXITCODE -ne 0) { throw "Signing failed: $file" }
+            & $signTool verify /pa /v $file
+            if ($LASTEXITCODE -ne 0) { throw "Signature verification failed: $file" }
+          }
+          "SIGNED: Authenticode verification passed." | Set-Content "dist/SIGNING-STATUS.txt" -Encoding utf8
+
+      - name: Create SHA-256 checksums
+        shell: pwsh
+        run: |
+          Get-FileHash "dist/U8Assistant-Win10-x64.exe", "dist/U8诊断工具-Win10-x64.exe" -Algorithm SHA256 |
+            ForEach-Object { "$($_.Hash.ToLower())  $($_.Path | Split-Path -Leaf)" } |
+            Set-Content "dist/SHA256SUMS.txt" -Encoding ascii
+
       - name: Upload Windows 10/11 x64 executables
         uses: actions/upload-artifact@v4
         with:
@@ -111,5 +173,7 @@ jobs:
           path: |
             dist/U8诊断工具-Win10-x64.exe
             dist/U8Assistant-Win10-x64.exe
+            dist/SHA256SUMS.txt
+            dist/SIGNING-STATUS.txt
           if-no-files-found: error
           retention-days: 14
