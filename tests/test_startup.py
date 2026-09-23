@@ -13,8 +13,10 @@ class StartupLogTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             with patch("src.utils.startup.startup_data_directory", return_value=Path(temporary)):
                 logger = configure_startup_logging("TestU8Assistant")
-                for handler in logger.handlers:
+                for handler in list(logger.handlers):
                     handler.flush()
+                    handler.close()
+                    logger.removeHandler(handler)
             log_path = Path(temporary) / "startup.log"
             self.assertTrue(log_path.is_file())
             content = log_path.read_text(encoding="utf-8")
